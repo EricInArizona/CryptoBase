@@ -84,6 +84,17 @@ class Integer
     return false;
     }
 
+  inline bool isNegativeOne( void ) const
+    {
+    if( !negative )
+      return false;
+
+    if( (index == 0) && (D[0] == 1) )
+      return true;
+
+    return false;
+    }
+
   inline bool isMoreThanInt24( const Int32 check )
                                            const
     {
