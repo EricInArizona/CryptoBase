@@ -31,12 +31,17 @@ class TonelliShanks
   TonelliShanks( void );
   TonelliShanks( const TonelliShanks& in );
   ~TonelliShanks( void );
-  static bool modRoot( const Integer& N,
+
+  static bool modRoot( const Integer& A,
                        Integer& result,
                        const Integer& prime,
                        IntegerMath& intMath,
                        Mod& mod );
 
+  static bool modRoot3( const Integer& A,
+                        Integer& result,
+                        const Integer& prime,
+                        IntegerMath& intMath,
+                        Mod& mod );
+
   };
-
-
