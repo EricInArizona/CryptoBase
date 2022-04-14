@@ -31,14 +31,14 @@ class Mod
   Mod( void );
   Mod( const Mod& in );
 
-  void makeExact( Integer& exact,
-                  const Integer& modulus,
-                  IntegerMath& intMath );
-
   void reduce( Integer& result,
                const Integer& toReduce,
                const Integer& modulus,
                IntegerMath& intMath );
+
+  void makeExact( Integer& exact,
+                  const Integer& modulus,
+                  IntegerMath& intMath );
 
   void toPower( Integer& result,
                 const Integer& exponent,
