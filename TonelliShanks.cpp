@@ -1,9 +1,6 @@
 // Copyright Eric Chauvin 2022.
 
 
-// This is not finished.
-
-
 
 // This is licensed under the GNU General
 // Public License (GPL).  It is the
@@ -92,6 +89,19 @@ bool TonelliShanks::modRoot( const Integer& A,
 // What is the modular square root of A mod
 // prime?
 
+if( A.isZero())
+  {
+  // With an elliptic curve, y can be zero.
+  result.setToZero();
+  return true;
+  }
+
+if( A.isOne())
+  {
+  result.setToOne();
+  return true;
+  }
+
 if( (prime.getD( 0 ) & 3) == 3 )
   {
   // If the prime is congruent to 3 mod 4.
@@ -110,31 +120,30 @@ pMinus1Over2.shiftRight( 1 ); // Divide by 2.
 
 // Find s, the largest power of two in pMinus1.
 Int32 s = 0;
+
 Integer q;
 q.copy( pMinus1 );
 
 // Factor out the largest power of 2.
-// So it is 2^s * q.
+// So it is p - 1 = 2^s * q.
 while( (q.getD( 0 ) & 1) == 0 )
   {
-  if( q.getIndex() == 0 )
-    {
-    if( q.getD( 0 ) == 0 )
-      throw "TonelliShanks.  Q is zero.";
-
-    }
+  if( q.isZero())
+    throw "TonelliShanks.  Q is zero.";
 
   q.shiftRight( 1 ); // Divide by 2.
   s++;
   }
+
+// s would have to be at least 1 here because
+// otherwise it would have been 3 mod 4 above.
 
 // Find the first non residue.
 Integer y;
 y.setToOne();
 while( true )
   {
-  if( !Euler::criterion( y, prime, pMinus1Over2,
-                         mod, intMath ))
+  if( !Euler::criterion( y, prime, mod, intMath ))
     break;
 
   y.increment();
@@ -159,9 +168,11 @@ Integer t;
 t.copy( A );
 mod.toPower( t, q, prime, intMath );
 
-// If this was true then A is the square root of A.
+// It can be 1.
 if( t.isOne())
-  throw "TonelliShanks. t can't be one here.";
+  return true;
+
+//  throw "TonelliShanks. t can't be one here.";
 
 Int32 E = s;
 
@@ -178,18 +189,16 @@ while( !t.isOne() )
   while( !tt.isOne())
     {
     // Powers of 2.
+    //  Keep squaring the previous square.
     mod.square( tt, prime, intMath );
     i++;
 
     // It never found an i value.
     if( i == E )
+      // throw "TonelliShanks. Never found i.";
       return false;
 
     }
-
-  Integer b;
-  b.copy( c );
-  mod.toPower( b, q, prime, intMath );
 
   Integer expon;
   expon.setFromInt24( E );
@@ -201,22 +210,21 @@ while( !t.isOne() )
   exponBig.setFromInt24( 2 );
   mod.toPower( exponBig, expon, pMinus1, intMath );
 
-// ====== What do I have here?
-  c.copy( b );
-
-
-  mod.toPower( c, exponBig, prime, intMath );
+  Integer b;
   b.copy( c );
+  mod.toPower( b, exponBig, prime, intMath );
 
-  Integer b2;
-  b2.copy( b );
-  mod.square( b2, prime, intMath );
+  // Set new values for the next loop.
 
   mod.multiply( result, b, prime, intMath );
 
-  mod.multiply( t, b2, prime, intMath );
+  Integer bSqr;
+  bSqr.copy( b );
+  mod.square( bSqr, prime, intMath );
+  c.copy( bSqr );
 
-  c.copy( b2 );
+  mod.multiply( t, bSqr, prime, intMath );
+
   E = i;
   }
 
@@ -231,6 +239,3 @@ if( test.isEqual( A ))
 
 return false;
 }
-
-
-
