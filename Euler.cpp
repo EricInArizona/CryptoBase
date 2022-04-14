@@ -37,7 +37,7 @@ Euler::~Euler( void )
 // quadratic residue mod the prime.
 bool Euler::criterion( const Integer& toTest,
                     const Integer& prime,
-                    const Integer& pMinus1Over2,
+                    // const Integer& pMinus1Over2,
                     Mod& mod,
                     IntegerMath& intMath )
 {
@@ -48,6 +48,23 @@ bool Euler::criterion( const Integer& toTest,
 // 1 and -1.
 // x^2 mod p = A  Is A a quardratic residue?
 
+if( prime.isZero())
+  throw "Calling Euler's criteria with prime 0";
+
+if( toTest.isZero())
+  throw "Calling Euler's criteria with toTest 0";
+
+if( toTest.isEqual( prime ))
+  throw "Calling Euler's criteria with toTest ==";
+
+Integer pMinus1;
+pMinus1.copy( prime );
+intMath.subLong48( pMinus1, 1 );
+
+Integer pMinus1Over2;
+pMinus1Over2.copy( pMinus1 );
+pMinus1Over2.shiftRight( 1 ); // Divide by 2.
+
 Integer result;
 result.copy( toTest );
 mod.toPower( result, pMinus1Over2,
@@ -57,8 +74,11 @@ if( result.isOne())
   return true;
 
 // It has to be either 1 or -1.
-if( !result.isNegativeOne())
+// pMinus1 is the same as -1.
+if( !result.isEqual( pMinus1 ))
   throw "Euler's criterion is not right with -1.";
 
 return false;
 }
+
+

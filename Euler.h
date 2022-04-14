@@ -29,10 +29,10 @@ class Euler
   Euler( void );
   Euler( const Euler& in );
   ~Euler( void );
-  static bool criterion( 
+  static bool criterion(
                     const Integer& toTest,
                     const Integer& prime,
-                    const Integer& pMinus1Over2,
+                    // const Integer& pMinus1Over2,
                     Mod& mod,
                     IntegerMath& intMath );
 
