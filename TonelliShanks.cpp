@@ -13,6 +13,7 @@
 #include "Euler.h"
 
 
+/*
 TonelliShanks::TonelliShanks( void )
 {
 
@@ -34,10 +35,12 @@ throw
 TonelliShanks::~TonelliShanks( void )
 {
 }
+*/
 
 
 
-// A good tutorial:
+// A good tutorial.  It's what I used to
+// figure out how to write this code.
 // https://exploringnumbertheory.wordpress.com/
 //         2015/12/09/solving-quadratic-
 //         congruences-with-odd-prime-moduli/
@@ -150,15 +153,16 @@ while( true )
   }
 
 // Now I have y which is a non residue.
-// It is a first bad approximation to
-// the answer.
 
 Integer qPlus1Over2;
 qPlus1Over2.copy( q );
 qPlus1Over2.increment(); // Plus 1.
 qPlus1Over2.shiftRight( 1 ); // Divide by 2.
+
+// This is the first approximation to the answer.
 result.copy( A );
 mod.toPower( result, qPlus1Over2, prime, intMath );
+
 
 Integer c;
 c.copy( y );
@@ -168,7 +172,7 @@ Integer t;
 t.copy( A );
 mod.toPower( t, q, prime, intMath );
 
-// It can be 1.
+// It can be 1, if it already has the answer.
 if( t.isOne())
   return true;
 
@@ -178,6 +182,7 @@ Int32 E = s;
 
 Integer tt;
 Integer temp;
+
 while( !t.isOne() )
   {
   tt.copy( t );
@@ -222,6 +227,12 @@ while( !t.isOne() )
   bSqr.copy( b );
   mod.square( bSqr, prime, intMath );
   c.copy( bSqr );
+
+  // The order of t should be getting smaller.
+  // That means like how big the group is.
+  // Like when x^y = 1.  When it comes back
+  // to the identity in the group.
+  // And that has to do with finding i above.
 
   mod.multiply( t, bSqr, prime, intMath );
 

@@ -25,12 +25,12 @@
 class TonelliShanks
   {
   private:
-  Int32 testForCopy = 123;
+  // Int32 testForCopy = 123;
 
   public:
-  TonelliShanks( void );
-  TonelliShanks( const TonelliShanks& in );
-  ~TonelliShanks( void );
+  // TonelliShanks( void );
+  // TonelliShanks( const TonelliShanks& in );
+  // ~TonelliShanks( void );
 
   static bool modRoot( const Integer& A,
                        Integer& result,
