@@ -176,7 +176,7 @@ mod.toPower( t, q, prime, intMath );
 if( t.isOne())
   return true;
 
-//  throw "TonelliShanks. t can't be one here.";
+//  throw "TonelliShanks. Can it be one here?";
 
 Int32 E = s;
 
@@ -248,5 +248,6 @@ mod.square( test, prime, intMath );
 if( test.isEqual( A ))
   return true;
 
-return false;
+throw "TonelliShanks at the bottom false.";
+// return false;
 }
