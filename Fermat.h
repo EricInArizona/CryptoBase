@@ -13,7 +13,7 @@
 
 
 
-#include "../LinuxApi/BasicTypes.h"
+#include "../CppBase/BasicTypes.h"
 #include "../CryptoBase/Integer.h"
 #include "../CryptoBase/IntegerMath.h"
 #include "../CryptoBase/Mod.h"

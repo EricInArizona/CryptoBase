@@ -1,5 +1,4 @@
 // Copyright Eric Chauvin, 2021 - 2022.
-// This copyright notice has to stay at the top.
 
 
 // This is licensed under the GNU General
@@ -29,8 +28,8 @@
 
 
 
-#include "../LinuxApi/BasicTypes.h"
-// #include "../LinuxApi/RangeC.h"
+#include "../CppBase/BasicTypes.h"
+// #include "../CppBase/RangeC.h"
 #include "ProjConst.h"
 
 

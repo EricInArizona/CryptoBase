@@ -1,5 +1,4 @@
 // Copyright Eric Chauvin 2021 - 2022.
-// This copyright notice has to stay at the top.
 
 
 // This is licensed under the GNU General
@@ -9,7 +8,7 @@
 
 
 
-#include "../LinuxApi/Casting.h"
+#include "../CppBase/Casting.h"
 
 #include "SPrimes.h"
 #include "IntegerMath.h"

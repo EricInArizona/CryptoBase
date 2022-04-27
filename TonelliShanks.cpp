@@ -39,12 +39,6 @@ TonelliShanks::~TonelliShanks( void )
 
 
 
-// A good tutorial.  It's what I used to
-// figure out how to write this code.
-// https://exploringnumbertheory.wordpress.com/
-//         2015/12/09/solving-quadratic-
-//         congruences-with-odd-prime-moduli/
-
 
 bool TonelliShanks::modRoot3( const Integer& A,
                         Integer& result,

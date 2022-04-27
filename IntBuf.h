@@ -2,6 +2,13 @@
 
 
 
+// This is licensed under the GNU General
+// Public License (GPL).  It is the
+// same license that Linux has.
+// https://www.gnu.org/licenses/gpl-3.0.html
+
+
+
 #pragma once
 
 
@@ -9,8 +16,8 @@
 // but it has a dynamically allocated array.
 // As opposed to the array being on the stack.
 
-#include "../LinuxApi/BasicTypes.h"
-#include "../LinuxApi/RangeC.h"
+#include "../CppBase/BasicTypes.h"
+#include "../CppBase/RangeC.h"
 
 #include "ProjConst.h"
 

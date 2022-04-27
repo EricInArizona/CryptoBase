@@ -33,6 +33,7 @@ Euler::~Euler( void )
 }
 
 
+
 // Euler's Criterion for whether a number is a
 // quadratic residue mod the prime.
 bool Euler::criterion( const Integer& toTest,
@@ -80,5 +81,3 @@ if( !result.isEqual( pMinus1 ))
 
 return false;
 }
-
-

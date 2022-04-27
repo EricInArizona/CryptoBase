@@ -15,8 +15,8 @@
 // Modular Arithmetic.
 
 
-#include "../LinuxApi/BasicTypes.h"
-#include "../CryptoBase/Integer.h"
+#include "../CppBase/BasicTypes.h"
+#include "Integer.h"
 #include "IntegerMath.h"
 #include "NumbSys.h"
 

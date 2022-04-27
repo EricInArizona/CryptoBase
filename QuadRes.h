@@ -13,10 +13,10 @@
 
 
 
-#include "../LinuxApi/BasicTypes.h"
-#include "../LinuxApi/BoolArray.h"
-#include "../LinuxApi/RangeC.h"
-#include "../LinuxApi/FileIO.h"
+#include "../CppBase/BasicTypes.h"
+#include "../CppBase/BoolArray.h"
+#include "../CppBase/RangeC.h"
+#include "../CppBase/FileIO.h"
 
 #include "ProjConst.h"
 #include "SPrimes.h"
