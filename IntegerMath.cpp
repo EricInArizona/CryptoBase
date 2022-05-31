@@ -755,8 +755,8 @@ if( from.isLong48())
   Str nS( N );
   if( from.getNegative() )
     {
-    Str sign( "-" );
-    Str both( sign, nS );
+    Str both( "-" );
+    both.append( nS );
     return both;
     }
   else

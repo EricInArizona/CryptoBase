@@ -37,12 +37,8 @@ delete[] bArrays;
 
 
 
-void QuadRes::init( const SPrimes& sPrimes,
-                    FileIO& mainIO )
+void QuadRes::init( const SPrimes& sPrimes )
 {
-mainIO.appendChars( "QuarRed.init().\n" );
-
-
 for( Int32 count = 0; count < last; count++ )
   {
   Int32 prime = sPrimes.getPrimeAt( count );

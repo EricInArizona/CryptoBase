@@ -36,7 +36,7 @@ class QuadRes
   QuadRes( void );
   QuadRes( const QuadRes& in );
   ~QuadRes( void );
-  void init( const SPrimes& sPrimes, FileIO& mainIO );
+  void init( const SPrimes& sPrimes );
   inline bool getVal( const Int32 primeAt,
                       const Int32 where ) const
     {
