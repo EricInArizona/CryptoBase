@@ -38,7 +38,7 @@ void Base10Number::setFromStr( const Str& toSet )
 index = 0;
 D[0] = 0;
 
-const Int32 last = toSet.getSize();
+const Int32 last = toSet.getLast();
 if( last < 1 )
   return;
 
@@ -48,7 +48,7 @@ for( Int32 count = last - 1; count >= 0; count-- )
   if( where >= digitArraySize )
     throw "Base10Number: Too big for array.";
 
-  Int32 c = toSet.charAt( count );
+  Int32 c = toSet.getC( count );
 
   // Ignore white space, commas, non digits.
   if( (c < '0') || (c > '9'))

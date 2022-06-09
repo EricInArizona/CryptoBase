@@ -777,13 +777,16 @@ while( !toDivide.isZero())
   toDivide.copy( quotient );
   // Ascii values go from '0' up to '9'.
   cBuf.appendChar( Casting::i32ToChar(
-                              '0' + digit ));
+                          '0' + digit ), 1024 );
   }
 
 if( from.getNegative() )
-  cBuf.appendChar( '-' );
+  cBuf.appendChar( '-', 1024 );
 
-Str result = cBuf.getStr();
+CharArray cArray;
+cBuf.copyToCharArray( cArray );
+
+Str result( cArray );
 result.reverse();
 return result;
 }
