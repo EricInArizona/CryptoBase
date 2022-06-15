@@ -10,7 +10,7 @@
 
 #include "../CppBase/Casting.h"
 #include "../CppBase/CharBuf.h"
-#include "../CppBase/Randomish.h"
+#include "Randomish.h"
 
 #include "Integer.h"
 
