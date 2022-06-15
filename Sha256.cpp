@@ -11,190 +11,44 @@
 
 
 // RFC 6234
-
-// Define structs here in the Cpp file.
-
-/*
 // FIPS 180-2.
 
-s for the United States of
-   America (USA) Federal Information Processing Standard (FIPS) Secure
-   Hash Algorithms (SHAs), code to implement the SHAs, code to implement
-   HMAC (Hashed Message Authentication Code, [<a href="https://datatracker.ietf.org/doc/html/rfc2104" title="&quot;HMAC: Keyed- Hashing for Message Authentication&quot;">RFC2104</a>]) based on the
-   SHAs, and code to implement HKDF (HMAC-based Key Derivation Function,
-   [<a href="https://datatracker.ietf.org/doc/html/rfc5869" title="&quot;HMAC-based Extract-and-Expand Key Derivation Function (HKDF)&quot;">RFC5869</a>]) based on HMAC.  Specifications for HMAC and HKDF are not
-   included as they appear elsewhere in the RFC series [<a href="https://datatracker.ietf.org/doc/html/rfc2104" title="&quot;HMAC: Keyed- Hashing for Message Authentication&quot;">RFC2104</a>]
-   [<a href="https://datatracker.ietf.org/doc/html/rfc5869" title="&quot;HMAC-based Extract-and-Expand Key Derivation Function (HKDF)&quot;">RFC5869</a>].
+/*
+// HMAC: Keyed- Hashing for Message
+// Authentication RFC2104
 
-   NOTE: Much of the text below is taken from [<a href="https://datatracker.ietf.org/doc/html/rfc6234#ref-SHS" title="&quot;Secure Hash Standard&quot;">SHS</a>], and the assertions
-   of the security of the hash algorithms described therein are made by
-   the US Government, the author of [<a href="https://datatracker.ietf.org/doc/html/rfc6234#ref-SHS" title="&quot;Secure Hash Standard&quot;">SHS</a>], not by the listed authors of
-   this document.  See also [<a href="https://datatracker.ietf.org/doc/html/rfc6194" title="&quot;Security Considerations for the SHA-0 and SHA-1 Message-Digest Algorithms&quot;">RFC6194</a>] concerning the security of SHA-1.
+// HMAC-based Extract-and-Expand Key Derivation
+// Function (HKDF) RFC5869
 
-   The text below specifies Secure Hash Algorithms, SHA-224 [<a href="https://datatracker.ietf.org/doc/html/rfc3874" title="&quot;A 224-bit One-way Hash Function: SHA-224&quot;">RFC3874</a>],
-   SHA-256, SHA-384, and SHA-512, for computing a condensed
-   representation of a message or a data file.  (SHA-1 is specified in
-   [<a href="https://datatracker.ietf.org/doc/html/rfc3174" title="&quot;US Secure Hash Algorithm 1 (SHA1)&quot;">RFC3174</a>].) When a message of any length &lt; 2^64 bits (for SHA-224 and
-   SHA-256) or &lt; 2^128 bits (for SHA-384 and SHA-512) is input to one of
-   these algorithms, the result is an output called a message digest.
-   The message digests range in length from 224 to 512 bits, depending
-   on the algorithm.  Secure Hash Algorithms are typically used with
-   other cryptographic algorithms, such as digital signature algorithms
-   and keyed-hash authentication codes, the generation of random numbers
-   [<a href="https://datatracker.ietf.org/doc/html/rfc4086" title="&quot;Randomness Requirements for Security&quot;">RFC4086</a>], or in key derivation functions.
-
-   The algorithms specified in this document are called secure because
-   it is computationally infeasible to (1) find a message that
-   corresponds to a given message digest, or (2) find two different
-   messages that produce the same message digest.  Any change to a
-   message in transit will, with very high probability, result in a
-   different message digest.  This will result in a verification failure
-   when the Secure Hash Algorithm is used with a digital signature
-   algorithm or a keyed-hash message authentication algorithm.
-
-   The code provided herein supports input strings of arbitrary bit
-   length.  SHA-1's sample code from [<a href="https://datatracker.ietf.org/doc/html/rfc3174" title="&quot;US Secure Hash Algorithm 1 (SHA1)&quot;">RFC3174</a>] has also been updated to
-   handle input strings of arbitrary bit length.  Permission is granted
-   for all uses, commercial and non-commercial, of this code.
-
-   This document obsoletes [<a href="https://datatracker.ietf.org/doc/html/rfc4634" title="&quot;US Secure Hash Algorithms (SHA and HMAC-SHA)&quot;">RFC4634</a>], and the changes from that RFC are
-   summarized in the Appendix.
+// Secure Hash Standard SHS
 
 
 
+// ASN.1 OIDs (Object Identifiers) for the
+// SHA algorithms, taken from
+// rfc 4055 Additional Algorithms and Identifiers
+// for RSA Cryptography for use in the Internet
+// X.509 Public Key Infrastructure Certificate
+// and Certificate Revocation List (CRL)
+// Profile 
+
+//    id-sha256  OBJECT IDENTIFIER  ::=
+//  { joint-iso-itu-t(2)
+//   country(16) us(840) organization(1) gov(101)
+//   csor(3) nistalgorithm(4) hashalgs(2) 1 }
+
+// id-sha512  OBJECT IDENTIFIER  ::= 
+// { joint-iso-itu-t(2)
+//   country(16) us(840) organization(1) gov(101)
+//   csor(3) nistalgorithm(4) hashalgs(2) 3 }
+
+// Big-endian
 
 
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                     [Page 4]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-5"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-   ASN.1 OIDs (Object Identifiers) for the SHA algorithms, taken from
-   [<a href="https://datatracker.ietf.org/doc/html/rfc4055" title="&quot;Additional Algorithms and Identifiers for RSA Cryptography for use in the Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile&quot;">RFC4055</a>], are as follows:
-
-   id-sha1  OBJECT IDENTIFIER  ::=  { iso(1)
-                         identified-organization(3) oiw(14)
-                         secsig(3) algorithms(2) 26 }
-    id-sha224  OBJECT IDENTIFIER  ::=  {{ joint-iso-itu-t(2)
-                         country(16) us(840) organization(1) gov(101)
-                         csor(3) nistalgorithm(4) hashalgs(2) 4 }
-    id-sha256  OBJECT IDENTIFIER  ::=  { joint-iso-itu-t(2)
-                         country(16) us(840) organization(1) gov(101)
-                         csor(3) nistalgorithm(4) hashalgs(2) 1 }
-    id-sha384  OBJECT IDENTIFIER  ::=  { joint-iso-itu-t(2)
-                         country(16) us(840) organization(1) gov(101)
-                         csor(3) nistalgorithm(4) hashalgs(2) 2 }
-    id-sha512  OBJECT IDENTIFIER  ::=  { joint-iso-itu-t(2)
-                         country(16) us(840) organization(1) gov(101)
-                         csor(3) nistalgorithm(4) hashalgs(2) 3 }
-
-   <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-2">Section 2</a> below defines the terminology and functions used as
-   building blocks to form these algorithms.  <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-3">Section 3</a> describes the
-   fundamental operations on words from which these algorithms are
-   built.  <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-4">Section 4</a> describes how messages are padded up to an integral
-   multiple of the required block size and then parsed into blocks.
-   <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-5">Section 5</a> defines the constants and the composite functions used to
-   specify the hash algorithms.  <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-6">Section 6</a> gives the actual
-   specification for the SHA-224, SHA-256, SHA-384, and SHA-512
-   functions.  <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-7">Section 7</a> provides pointers to the specification of HMAC
-   keyed message authentication codes and to the specification of an
-   extract-and-expand key derivation function based on HMAC.
-
-   <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-8">Section 8</a> gives sample code for the SHA algorithms, for SHA-based
-   HMACs, and for HMAC-based extract-and-expand key derivation function.
-
-<span class="h2"><a class="selflink" id="section-2" href="https://datatracker.ietf.org/doc/html/rfc6234#section-2">2</a>.  Notation for Bit Strings and Integers</span>
-
-   The following terminology related to bit strings and integers will be
-   used:
-
-   a. A hex digit is an element of the set {0, 1, ... , 9, A, ... , F}.
-      A hex digit is the representation of a 4-bit string.  Examples: 7
-      = 0111, A = 1010.
-
-      b. A word equals a 32-bit or 64-bit string that may be represented
-      as a sequence of 8 or 16 hex digits, respectively.  To convert a
-      word to hex digits, each 4-bit string is converted to its hex
-      equivalent as described in (a) above.  Example:
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                     [Page 5]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-6"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-         1010 0001 0000 0011 1111 1110 0010 0011 = A103FE23.
-
-      Throughout this document, the "big-endian" convention is used when
-      expressing both 32-bit and 64-bit words, so that within each word
-      the most significant bit is shown in the leftmost bit position.
-
-      c. An integer may be represented as a word or pair of words.
-
-      An integer between 0 and 2^32 - 1 inclusive may be represented as
-      a 32-bit word.  The least significant four bits of the integer are
-      represented by the rightmost hex digit of the word representation.
-      Example: the integer 291 = 2^8+2^5+2^1+2^0 = 256+32+2+1 is
-      represented by the hex word 00000123.
-
-      The same holds true for an integer between 0 and 2^64-1 inclusive,
-      which may be represented as a 64-bit word.
-
-      If Z is an integer, 0 &lt;= z &lt; 2^64, then z = (2^32)x + y where
-      0 &lt;= x &lt; 2^32 and 0 &lt;= y &lt; 2^32.  Since x and y can be represented
-      as words X and Y, respectively, z can be represented as the pair
-      of words (X,Y).
-
-      Again, the "big-endian" convention is used and the most
-      significant word is in the leftmost word position for values
-      represented by multiple-words.
-
-      d. block = 512-bit or 1024-bit string.  A block (e.g., B) may be
-      represented as a sequence of 32-bit or 64-bit words.
-
-<span class="h2"><a class="selflink" id="section-3" href="https://datatracker.ietf.org/doc/html/rfc6234#section-3">3</a>.  Operations on Words</span>
-
-   The following logical operators will be applied to words in all four
-   hash operations specified herein.  SHA-224 and SHA-256 operate on
-   32-bit words while SHA-384 and SHA-512 operate on 64-bit words.
-
-   In the operations below, x&lt;&lt;n is obtained as follows: discard the
-   leftmost n bits of x and then pad the result with n zeroed bits on
-   the right (the result will still be the same number of bits).
-   Similarly, x&gt;&gt;n is obtained as follows: discard the rightmost n bits
-   of x and then prepend the result with n zeroed bits on the left (the
-   result will still be the same number of bits).
-
-   a. Bitwise logical word operations
-
-         X AND Y  =  bitwise logical "and" of  X and Y.
-
-         X OR Y   =  bitwise logical "inclusive-or" of X and Y.
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                     [Page 6]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-7"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-         X XOR Y  =  bitwise logical "exclusive-or" of X and Y.
-
-         NOT X    =  bitwise logical "complement" of X.
-
-         Example:
-                  01101100101110011101001001111011
-            XOR   01100101110000010110100110110111
-                  --------------------------------
-              =   00001001011110001011101111001100
-
-   b. The operation X + Y is defined as follows: words X and Y represent
-      w-bit integers x and y, where 0 &lt;= x &lt; 2^w and 0 &lt;= y &lt; 2^w.  For
+   b. The operation X + Y is defined as follows:
+ words X and Y represent
+      w-bit integers x and y, where 0 &lt;= x &lt;
+ 2^w and 0 &lt;= y &lt; 2^w.  For
       positive integers n and m, let
 
          n mod m
@@ -203,43 +57,23 @@ s for the United States of
 
          z  =  (x + y) mod 2^w.
 
-      Then 0 &lt;= z &lt; 2^w.  Convert z to a word, Z, and define Z = X + Y.
+      Then 0 &lt;= z &lt; 2^w.  
 
-   c. The right shift operation SHR^n(x), where x is a w-bit word and n
-      is an integer with 0 &lt;= n &lt; w, is defined by
+ Z = X + Y.
+Doesn't have any carry operation for a word.
+It's like adding mod 2^32 or 2^64.
 
-         SHR^n(x) = x&gt;&gt;n
+Rotate right brings the rightmost bits around
+to the left.
 
-   d. The rotate right (circular right shift) operation ROTR^n(x), where
-      x is a w-bit word and n is an integer with 0 &lt;= n &lt; w, is defined
-      by
+RotateR
+ (x >> n) OR (x << (w - n))
+ (x >> n) || (x << (32 - n)) // For 32 bits.
 
-         ROTR^n(x) = (x&gt;&gt;n) OR (x&lt;&lt;(w-n))
-
-   e. The rotate left (circular left shift) operation ROTL^n(x), where x
-      is a w-bit word and n is an integer with 0 &lt;= n &lt; w, is defined by
-
-         ROTL^n(X) = (x&lt;&lt;n) OR (x&gt;&gt;(w-n))
-
-      Note the following equivalence relationships, where w is fixed in
-      each relationship:
-
-         ROTL^n(x) = ROTR^(w-n)(x)
-
-         ROTR^n(x) = ROTL^(w-n)(x)
+RotateL
+    ROTL^n(X) = (x&lt;&lt;n) OR (x&gt;&gt;(w-n))
 
 
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                     [Page 7]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-8"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-<span class="h2"><a class="selflink" id="section-4" href="https://datatracker.ietf.org/doc/html/rfc6234#section-4">4</a>.  Message Padding and Parsing</span>
 
    The hash functions specified herein are used to compute a message
    digest for a message or data file that is provided as input.  The
@@ -5388,7 +5222,7 @@ void randomtest(int hashno, const char *seed, int hashsize,
       // Mi = MDi-3 || MDi-2 || MDi-1;
       USHAContext Mi;
       memset(&amp;Mi, '\343', sizeof(Mi));
-              // force bad data into struct 
+              // force bad data into struct
       USHAReset(&amp;Mi, hashes[hashno].whichSha);
       USHAInput(&amp;Mi, MD[i-3], hashsize);
       USHAInput(&amp;Mi, MD[i-2], hashsize);
@@ -5443,7 +5277,7 @@ void testErrors(int hashnolow, int hashnohigh, int printResults,
 
   for (hashno = hashnolow; hashno &lt;= hashnohigh; hashno++) {
     memset(&amp;usha, '\343', sizeof(usha));
-                       // force bad data 
+                       // force bad data
     USHAReset(&amp;usha, hashno);
     USHAResult(&amp;usha, Message_Digest);
     err = USHAInput(&amp;usha, (const unsigned char *)"foo", 3);
@@ -5679,7 +5513,7 @@ int main(int argc, char **argv)
           } else if (runHkdfTests) {
             err = hashHkdf(testno, loopno, hashno,
                        printResults, printPassFail);
-          } else { // sha tests 
+          } else { // sha tests
             err = hash(testno, loopno, hashno,
                        hashes[hashno].tests[testno].testarray,
                        hashes[hashno].tests[testno].length,
@@ -5729,187 +5563,6 @@ int scasecmp(const char *s1, const char *s2)
       return 0;
    }
 }
-
-
-
-Security Considerations
-s intended to provide convenient open source access by
-   the Internet community to the United States of America Federal
-   Information Processing Standard Secure Hash Algorithms (SHAs) [FIPS
-   180-2], HMACs based thereon, and HKDF.  No independent assertion of
-   the security of these functions by the authors for any particular use
-   is intended.
-
-   See [<a href="https://datatracker.ietf.org/doc/html/rfc6194" title="&quot;Security Considerations for the SHA-0 and SHA-1 Message-Digest Algorithms&quot;">RFC6194</a>] for a discussion of SHA-1 Security Considerations.
-
-<span class="h2"><a class="selflink" id="section-10" href="https://datatracker.ietf.org/doc/html/rfc6234#section-10">10</a>.  Acknowledgements</span>
-
-   Thanks for the corrections to [<a href="https://datatracker.ietf.org/doc/html/rfc4634" title="&quot;US Secure Hash Algorithms (SHA and HMAC-SHA)&quot;">RFC4634</a>] that were provided by Alfred
-   Hoenes and Jan Andres and to Alfred's comments on the document
-   hereof.
-
-   Also to the following in alphabetic order, whose comments lead to
-   improvements in the document: James Carlson, Russ Housley, Tero
-   Kivinen, Juergen Quittek, and Sean Turner.
-
-
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                   [Page 123]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-124"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-<span class="h2"><a class="selflink" id="section-11" href="https://datatracker.ietf.org/doc/html/rfc6234#section-11">11</a>.  References</span>
-
-<span class="h3"><a class="selflink" id="section-11.1" href="https://datatracker.ietf.org/doc/html/rfc6234#section-11.1">11.1</a>.  Normative References</span>
-
-   [<a id="ref-RFC2104">RFC2104</a>]  Krawczyk, H., Bellare, M., and R. Canetti, "HMAC: Keyed-
-              Hashing for Message Authentication", <a href="https://datatracker.ietf.org/doc/html/rfc2104">RFC 2104</a>, February
-              1997.
-
-   [<a id="ref-RFC5869">RFC5869</a>]  Krawczyk, H. and P. Eronen, "HMAC-based Extract-and-Expand
-              Key Derivation Function (HKDF)", <a href="https://datatracker.ietf.org/doc/html/rfc5869">RFC 5869</a>, May 2010.
-
-   [<a id="ref-SHS">SHS</a>]      "Secure Hash Standard", United States of American,
-              National Institute of Science and Technology, Federal
-              Information Processing Standard (FIPS) 180-3,
-              <a href="http://csrc.nist.gov/publications/fips/fips180-3/fips180-3_final.pdf">http://csrc.nist.gov/publications/fips/fips180-3/</a>
-              <a href="http://csrc.nist.gov/publications/fips/fips180-3/fips180-3_final.pdf">fips180-3_final.pdf</a>.
-
-   [<a id="ref-US-ASCII">US-ASCII</a>] ANSI, "USA Standard Code for Information Interchange",
-              X3.4, American National Standards Institute: New York,
-              1968.
-
-<span class="h3"><a class="selflink" id="section-11.2" href="https://datatracker.ietf.org/doc/html/rfc6234#section-11.2">11.2</a>.  Informative References</span>
-
-   [<a id="ref-RFC3174">RFC3174</a>]  Eastlake 3rd, D. and P. Jones, "US Secure Hash Algorithm 1
-              (SHA1)", <a href="https://datatracker.ietf.org/doc/html/rfc3174">RFC 3174</a>, September 2001.
-
-              [<a id="ref-RFC3874">RFC3874</a>]  Housley, R., "A 224-bit One-way Hash Function:
-              SHA-224", <a href="https://datatracker.ietf.org/doc/html/rfc3874">RFC 3874</a>, September 2004.
-
-   [<a id="ref-RFC4055">RFC4055</a>]  Schaad, J., Kaliski, B., and R. Housley, "Additional
-              Algorithms and Identifiers for RSA Cryptography for use in
-              the Internet X.509 Public Key Infrastructure Certificate
-              and Certificate Revocation List (CRL) Profile", <a href="https://datatracker.ietf.org/doc/html/rfc4055">RFC 4055</a>,
-              June 2005.
-
-   [<a id="ref-RFC4086">RFC4086</a>]  Eastlake 3rd, D., Schiller, J., and S. Crocker,
-              "Randomness Requirements for Security", <a href="https://datatracker.ietf.org/doc/html/bcp106">BCP 106</a>, <a href="https://datatracker.ietf.org/doc/html/rfc4086">RFC 4086</a>,
-              June 2005.
-
-   [<a id="ref-RFC4634">RFC4634</a>]  Eastlake 3rd, D. and T. Hansen, "US Secure Hash Algorithms
-              (SHA and HMAC-SHA)", <a href="https://datatracker.ietf.org/doc/html/rfc4634">RFC 4634</a>, July 2006.
-
-   [<a id="ref-RFC6194">RFC6194</a>]  Polk, T., Chen, L., Turner, S., and P. Hoffman, "Security
-              Considerations for the SHA-0 and SHA-1 Message-Digest
-              Algorithms", <a href="https://datatracker.ietf.org/doc/html/rfc6194">RFC 6194</a>, March 2011.
-
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                   [Page 124]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-125"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-   [<a id="ref-SHAVS">SHAVS</a>]    "The Secure Hash Algorithm Validation System (SHAVS)",
-              <a href="http://csrc.nist.gov/groups/STM/cavp/documents/shs/SHAVS.pdf">http://csrc.nist.gov/groups/STM/cavp/documents/shs/</a>
-              <a href="http://csrc.nist.gov/groups/STM/cavp/documents/shs/SHAVS.pdf">SHAVS.pdf</a>,  July 2004.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                   [Page 125]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-126"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-Appendix: Changes from <a href="https://datatracker.ietf.org/doc/html/rfc4634">RFC 4634</a>
-
-   The following changes were made to <a href="https://datatracker.ietf.org/doc/html/rfc4634">RFC 4634</a> to produce this document:
-
-   1. Add code for HKDF and brief text about HKDF with pointer to
-      [<a href="https://datatracker.ietf.org/doc/html/rfc5869" title="&quot;HMAC-based Extract-and-Expand Key Derivation Function (HKDF)&quot;">RFC5869</a>].
-
-   2. Fix numerous errata filed against [<a href="https://datatracker.ietf.org/doc/html/rfc4634" title="&quot;US Secure Hash Algorithms (SHA and HMAC-SHA)&quot;">RFC4634</a>] as included below.
-      Note that in no case did the old code return an incorrect hash
-      value.
-
-      2.a. Correct some of the error return values which has erroneously
-           been "shaNull" to the correct "shaInputTooLong" error.
-
-      2.b. Update comments and variable names within the code for
-           consistency and clarity and other editorial changes.
-
-      2.c. The previous code for SHA-384 and SHA-512 would stop after
-           2^93 bytes (2^96 bits).  The fixed code handles up to 2^125
-           bytes (2^128 bits).
-
-      2.d. Add additional error checking including a run time check in
-           the test driver to detect attempts to run the test driver
-           after compilation using some other character set instead of
-           [<a href="https://datatracker.ietf.org/doc/html/rfc6234#ref-US-ASCII" title="&quot;USA Standard Code for Information Interchange&quot;">US-ASCII</a>].
-
-   3. Update boilerplate, remove special license in [<a href="https://datatracker.ietf.org/doc/html/rfc4634" title="&quot;US Secure Hash Algorithms (SHA and HMAC-SHA)&quot;">RFC4634</a>] as new
-      boilerplate mandates simplified BSD license.
-
-   4. Replace MIT version of getopt with new code to satisfy IETF
-      incoming and outgoing license restrictions.
-
-   5. Add references to [<a href="https://datatracker.ietf.org/doc/html/rfc6194" title="&quot;Security Considerations for the SHA-0 and SHA-1 Message-Digest Algorithms&quot;">RFC6194</a>].
-
-   6. Other assorted editorial improvements.
 
 
 */

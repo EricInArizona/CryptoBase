@@ -7,11 +7,16 @@
 // https://www.gnu.org/licenses/gpl-3.0.html
 
 
+
+// Make it work first, then make it work fast.
+
+
 // This code was adapted and made modern,
 // and converted to C++, from:
 // RFC 6234 -
 // US Secure Hash Algorithms (SHA and
 // SHA-based HMAC and HKDF
+
 
 // IETF Licensing and copyright stuff.
 #include "../CryptoBase/ShaLicense.txt"
@@ -28,16 +33,39 @@
 // SHA 256 works on 32 bit words.
 // SHA 512 works on 64 bit words.
 
-// HMAC Hash Message Authentication Code
 
 class Sha256
   {
   private:
-  // inline void somethingInternal( void )
-    // {
+  inline Uint32 add( const Uint32 x,
+                     const Uint32 y )
+    {
+    Uint64 result = x + y;
+    // It's mod 2^32.
+    result = result & 0xFFFFFFFF;
+    return Casting::u64ToU32( result );
+    }
 
-    // }
 
+  inline Uint32 rotateR( const Uint32 x, 
+                         const Uint32 howMuch )
+    {
+    // Like rotating around in a circle.
+    Uint64 result = (x >> howMuch) |
+                    (x << (32 - howMuch));
+
+    return Casting::u64ToU32( result );
+    }
+
+
+  inline Uint32 rotateL( const Uint32 x, 
+                         const Uint32 howMuch )
+    {
+    Uint64 result = (x << howMuch) |
+                    (x >> (32 - howMuch));
+
+    return Casting::u64ToU32( result );
+    }
 
   public:
 

@@ -4,6 +4,11 @@ RFC 6234 -
 US Secure Hash Algorithms (SHA and SHA-based
 HMAC and HKDF)
 
+In the text of RFC 6234 it says:
+"Permission is granted for all uses, commercial
+and non-commercial, of this code."
+
+
 Copyright Notice
 
 Copyright (c) 2011 IETF Trust and the persons
@@ -14,13 +19,13 @@ Copyright (c) 2011 IETF Trust and the persons
 identified as authors of the code.
 All rights reserved.
 
-Redistribution and use in source and binary 
+Redistribution and use in source and binary
 forms, with or without modification, are
 permitted provided that the following conditions
 are met:
 
 - Redistributions of source code must retain
-the above copyright notice, this list of 
+the above copyright notice, this list of
 conditions and the following disclaimer.
 
 - Redistributions in binary form must
@@ -47,7 +52,7 @@ INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
 CONSEQUENTIAL DAMAGES (INCLUDING, BUT
 NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
 GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
 INTERRUPTION)
 HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 WHETHER IN CONTRACT, STRICT LIABILITY, OR
@@ -59,4 +64,3 @@ DAMAGE.
 
 
 */
-
