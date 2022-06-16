@@ -11,1041 +11,175 @@
 
 
 // RFC 6234
-// FIPS 180-2.
+
+
 
 /*
-// HMAC: Keyed- Hashing for Message
-// Authentication RFC2104
+Process one char array of 64 bytes.
+That's 512 bits.
 
-// HMAC-based Extract-and-Expand Key Derivation
-// Function (HKDF) RFC5869
+void Sha256::processMessageBlock( 
+                  const CharBuf& charBuf,
+                  const Int32 where )
+{
 
-// Secure Hash Standard SHS
+//  int        t, t4;     // Loop counter
+//  uint32_t   temp1, temp2;  // Temporary word value
+Uint32 W[64];      // Word sequence
 
+//  uint32_t   A, B, C, D, E, F, G, H;
+                     // Word buffers
 
+// Initialize the first 16 words in the array W.
+=====
+for( Int32 count = 0; count < 16; count++ )
+  W[t] = charBuf.getUint32( where + count );
 
-// ASN.1 OIDs (Object Identifiers) for the
-// SHA algorithms, taken from
-// rfc 4055 Additional Algorithms and Identifiers
-// for RSA Cryptography for use in the Internet
-// X.509 Public Key Infrastructure Certificate
-// and Certificate Revocation List (CRL)
-// Profile 
 
-//    id-sha256  OBJECT IDENTIFIER  ::=
-//  { joint-iso-itu-t(2)
-//   country(16) us(840) organization(1) gov(101)
-//   csor(3) nistalgorithm(4) hashalgs(2) 1 }
 
-// id-sha512  OBJECT IDENTIFIER  ::= 
-// { joint-iso-itu-t(2)
-//   country(16) us(840) organization(1) gov(101)
-//   csor(3) nistalgorithm(4) hashalgs(2) 3 }
+(Message_Block[t4]) << 24) |
+           (Message_Block[t4 + 1]) << 16) |
+           (Message_Block[t4 + 2]) &lt;&lt; 8) |
+           (((uint32_t)context-&gt;Message_Block[t4 + 3]));
 
-// Big-endian
 
 
-   b. The operation X + Y is defined as follows:
- words X and Y represent
-      w-bit integers x and y, where 0 &lt;= x &lt;
- 2^w and 0 &lt;= y &lt; 2^w.  For
-      positive integers n and m, let
 
-         n mod m
+  for (t = 16; t < 64; t++)
+    W[t] = SHA256_sigma1(W[t-2]) + W[t-7] +
+        SHA256_sigma0(W[t-15]) + W[t-16];
 
-      be the remainder upon dividing n by m.  Compute
+  A = context-&gt;Intermediate_Hash[0];
+  B = context-&gt;Intermediate_Hash[1];
+  C = context-&gt;Intermediate_Hash[2];
+  D = context-&gt;Intermediate_Hash[3];
+  E = context-&gt;Intermediate_Hash[4];
+  F = context-&gt;Intermediate_Hash[5];
+  G = context-&gt;Intermediate_Hash[6];
+  H = context-&gt;Intermediate_Hash[7];
 
-         z  =  (x + y) mod 2^w.
+  for (t = 0; t &lt; 64; t++) {
+    temp1 = H + SHA256_SIGMA1(E) + SHA_Ch(E,F,G) + K[t] + W[t];
+    temp2 = SHA256_SIGMA0(A) + SHA_Maj(A,B,C);
+    H = G;
+    G = F;
+    F = E;
+    E = D + temp1;
+    D = C;
+    C = B;
+    B = A;
+    A = temp1 + temp2;
+  }
 
-      Then 0 &lt;= z &lt; 2^w.  
+  context-&gt;Intermediate_Hash[0] += A;
+  context-&gt;Intermediate_Hash[1] += B;
+  context-&gt;Intermediate_Hash[2] += C;
+  context-&gt;Intermediate_Hash[3] += D;
+  context-&gt;Intermediate_Hash[4] += E;
+  context-&gt;Intermediate_Hash[5] += F;
+  context-&gt;Intermediate_Hash[6] += G;
+  context-&gt;Intermediate_Hash[7] += H;
 
- Z = X + Y.
-Doesn't have any carry operation for a word.
-It's like adding mod 2^32 or 2^64.
+  context-&gt;Message_Block_Index = 0;
+}
+*/
 
-Rotate right brings the rightmost bits around
-to the left.
 
-RotateR
- (x >> n) OR (x << (w - n))
- (x >> n) || (x << (32 - n)) // For 32 bits.
 
-RotateL
-    ROTL^n(X) = (x&lt;&lt;n) OR (x&gt;&gt;(w-n))
 
-
-
-   The hash functions specified herein are used to compute a message
-   digest for a message or data file that is provided as input.  The
-   message or data file should be considered to be a bit string.  The
-   length of the message is the number of bits in the message (the empty
-   message has length 0).  If the number of bits in a message is a
-   multiple of 8, for compactness we can represent the message in hex.
-   The purpose of message padding is to make the total length of a
-   padded message a multiple of 512 for SHA-224 and SHA-256 or a
-   multiple of 1024 for SHA-384 and SHA-512.
-
-   The following specifies how this padding shall be performed.  As a
-   summary, a "1" followed by m "0"s followed by a 64-bit or 128-bit
-   integer are appended to the end of the message to produce a padded
-   message of length 512*n or 1024*n.  The appended integer is the
-   length of the original message.  The padded message is then processed
-   by the hash function as n 512-bit or 1024-bit blocks.
-
-<span class="h3"><a class="selflink" id="section-4.1" href="https://datatracker.ietf.org/doc/html/rfc6234#section-4.1">4.1</a>.  SHA-224 and SHA-256</span>
-
-   Suppose a message has length L &lt; 2^64.  Before it is input to the
-   hash function, the message is padded on the right as follows:
-
-   a. "1" is appended.  Example: if the original message is "01010000",
-      this is padded to "010100001".
-
-   b. K "0"s are appended where K is the smallest, non-negative solution
-      to the equation
-
-         ( L + 1 + K ) mod 512 = 448
-
-   c. Then append the 64-bit block that is L in binary representation.
-      After appending this block, the length of the message will be a
-      multiple of 512 bits.
-
-      Example: Suppose the original message is the bit string
-
-         01100001 01100010 01100011 01100100 01100101
-
-      After step (a) this gives
-
-         01100001 01100010 01100011 01100100 01100101 1
-
-
-
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                     [Page 8]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-9"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-      Since L = 40, the number of bits in the above is 41 and K = 407
-      "0"s are appended, making the total now 448.  This gives the
-      following in hex:
-
-         61626364 65800000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000
-
-      The 64-bit representation of L = 40 is hex 00000000 00000028.
-      Hence the final padded message is the following hex
-
-         61626364 65800000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000028
-
-<span class="h3"><a class="selflink" id="section-4.2" href="https://datatracker.ietf.org/doc/html/rfc6234#section-4.2">4.2</a>.  SHA-384 and SHA-512</span>
-
-   Suppose a message has length L &lt; 2^128.  Before it is input to the
-   hash function, the message is padded on the right as follows:
-
-   a. "1" is appended.  Example: if the original message is "01010000",
-      this is padded to "010100001".
-
-   b. K "0"s are appended where K is the smallest, non-negative solution
-      to the equation
-
-         ( L + 1 + K ) mod 1024 = 896
-
-   c. Then append the 128-bit block that is L in binary representation.
-      After appending this block, the length of the message will be a
-      multiple of 1024 bits.
-
-      Example: Suppose the original message is the bit string
-
-         01100001 01100010 01100011 01100100 01100101
-
-      After step (a) this gives
-
-         01100001 01100010 01100011 01100100 01100101 1
-
-
-
-
-
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                     [Page 9]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-10"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-      Since L = 40, the number of bits in the above is 41 and K = 855
-      "0"s are appended, making the total now 896.  This gives the
-      following in hex:
-
-         61626364 65800000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-
-      The 128-bit representation of L = 40 is hex 00000000 00000000
-      00000000 00000028.  Hence the final padded message is the
-      following hex:
-
-         61626364 65800000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000000
-         00000000 00000000 00000000 00000028
-
-<span class="h2"><a class="selflink" id="section-5" href="https://datatracker.ietf.org/doc/html/rfc6234#section-5">5</a>.  Functions and Constants Used</span>
-
-   The following subsections give the six logical functions and the
-   table of constants used in each of the hash functions.
-
-<span class="h3"><a class="selflink" id="section-5.1" href="https://datatracker.ietf.org/doc/html/rfc6234#section-5.1">5.1</a>.  SHA-224 and SHA-256</span>
-
-   SHA-224 and SHA-256 use six logical functions, where each function
-   operates on 32-bit words, which are represented as x, y, and z.  The
-   result of each function is a new 32-bit word.
-
-      CH( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
-
-      MAJ( x, y, z) = (x AND y) XOR (x AND z) XOR (y AND z)
-
-      BSIG0(x) = ROTR^2(x) XOR ROTR^13(x) XOR ROTR^22(x)
-
-      BSIG1(x) = ROTR^6(x) XOR ROTR^11(x) XOR ROTR^25(x)
-
-      SSIG0(x) = ROTR^7(x) XOR ROTR^18(x) XOR SHR^3(x)
-
-      SSIG1(x) = ROTR^17(x) XOR ROTR^19(x) XOR SHR^10(x)
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                    [Page 10]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-11"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-   SHA-224 and SHA-256 use the same sequence of sixty-four constant
-   32-bit words, K0, K1, ..., K63.  These words represent the first 32
-   bits of the fractional parts of the cube roots of the first sixty-
-   four prime numbers.  In hex, these constant words are as follows
-   (from left to right):
-
-      428a2f98 71374491 b5c0fbcf e9b5dba5
-      3956c25b 59f111f1 923f82a4 ab1c5ed5
-      d807aa98 12835b01 243185be 550c7dc3
-      72be5d74 80deb1fe 9bdc06a7 c19bf174
-      e49b69c1 efbe4786 0fc19dc6 240ca1cc
-      2de92c6f 4a7484aa 5cb0a9dc 76f988da
-      983e5152 a831c66d b00327c8 bf597fc7
-      c6e00bf3 d5a79147 06ca6351 14292967
-      27b70a85 2e1b2138 4d2c6dfc 53380d13
-      650a7354 766a0abb 81c2c92e 92722c85
-      a2bfe8a1 a81a664b c24b8b70 c76c51a3
-      d192e819 d6990624 f40e3585 106aa070
-      19a4c116 1e376c08 2748774c 34b0bcb5
-      391c0cb3 4ed8aa4a 5b9cca4f 682e6ff3
-      748f82ee 78a5636f 84c87814 8cc70208
-      90befffa a4506ceb bef9a3f7 c67178f2
-
-<span class="h3"><a class="selflink" id="section-5.2" href="https://datatracker.ietf.org/doc/html/rfc6234#section-5.2">5.2</a>.  SHA-384 and SHA-512</span>
-
-   SHA-384 and SHA-512 each use six logical functions, where each
-   function operates on 64-bit words, which are represented as x, y, and
-   z.  The result of each function is a new 64-bit word.
-
-      CH( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
-
-      MAJ( x, y, z) = (x AND y) XOR (x AND z) XOR (y AND z)
-
-      BSIG0(x) = ROTR^28(x) XOR ROTR^34(x) XOR ROTR^39(x)
-
-      BSIG1(x) = ROTR^14(x) XOR ROTR^18(x) XOR ROTR^41(x)
-
-      SSIG0(x) = ROTR^1(x) XOR ROTR^8(x) XOR SHR^7(x)
-
-      SSIG1(x) = ROTR^19(x) XOR ROTR^61(x) XOR SHR^6(x)
-
-   SHA-384 and SHA-512 use the same sequence of eighty constant 64-bit
-   words, K0, K1, ... K79.  These words represent the first 64 bits of
-   the fractional parts of the cube roots of the first eighty prime
-   numbers.  In hex, these constant words are as follows (from left to
-   right):
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                    [Page 11]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-12"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-   428a2f98d728ae22 7137449123ef65cd b5c0fbcfec4d3b2f e9b5dba58189dbbc
-   3956c25bf348b538 59f111f1b605d019 923f82a4af194f9b ab1c5ed5da6d8118
-   d807aa98a3030242 12835b0145706fbe 243185be4ee4b28c 550c7dc3d5ffb4e2
-   72be5d74f27b896f 80deb1fe3b1696b1 9bdc06a725c71235 c19bf174cf692694
-   e49b69c19ef14ad2 efbe4786384f25e3 0fc19dc68b8cd5b5 240ca1cc77ac9c65
-   2de92c6f592b0275 4a7484aa6ea6e483 5cb0a9dcbd41fbd4 76f988da831153b5
-   983e5152ee66dfab a831c66d2db43210 b00327c898fb213f bf597fc7beef0ee4
-   c6e00bf33da88fc2 d5a79147930aa725 06ca6351e003826f 142929670a0e6e70
-   27b70a8546d22ffc 2e1b21385c26c926 4d2c6dfc5ac42aed 53380d139d95b3df
-   650a73548baf63de 766a0abb3c77b2a8 81c2c92e47edaee6 92722c851482353b
-   a2bfe8a14cf10364 a81a664bbc423001 c24b8b70d0f89791 c76c51a30654be30
-   d192e819d6ef5218 d69906245565a910 f40e35855771202a 106aa07032bbd1b8
-   19a4c116b8d2d0c8 1e376c085141ab53 2748774cdf8eeb99 34b0bcb5e19b48a8
-   391c0cb3c5c95a63 4ed8aa4ae3418acb 5b9cca4f7763e373 682e6ff3d6b2b8a3
-   748f82ee5defb2fc 78a5636f43172f60 84c87814a1f0ab72 8cc702081a6439ec
-   90befffa23631e28 a4506cebde82bde9 bef9a3f7b2c67915 c67178f2e372532b
-   ca273eceea26619c d186b8c721c0c207 eada7dd6cde0eb1e f57d4f7fee6ed178
-   06f067aa72176fba 0a637dc5a2c898a6 113f9804bef90dae 1b710b35131c471b
-   28db77f523047d84 32caab7b40c72493 3c9ebe0a15c9bebc 431d67c49c100d4c
-   4cc5d4becb3e42b6 597f299cfc657e2a 5fcb6fab3ad6faec 6c44198c4a475817
-
-<span class="h2"><a class="selflink" id="section-6" href="https://datatracker.ietf.org/doc/html/rfc6234#section-6">6</a>.  Computing the Message Digest</span>
-
-   The output of each of the secure hash functions, after being applied
-   to a message of N blocks, is the hash quantity H(N).  For SHA-224 and
-   SHA-256, H(i) can be considered to be eight 32-bit words, H(i)0,
-   H(i)1, ... H(i)7.  For SHA-384 and SHA-512, it can be considered to
-   be eight 64-bit words, H(i)0, H(i)1, ..., H(i)7.
-
-   As described below, the hash words are initialized, modified as each
-   message block is processed, and finally concatenated after processing
-   the last block to yield the output.  For SHA-256 and SHA-512, all of
-   the H(N) variables are concatenated while the SHA-224 and SHA-384
-   hashes are produced by omitting some from the final concatenation.
-
-<span class="h3"><a class="selflink" id="section-6.1" href="https://datatracker.ietf.org/doc/html/rfc6234#section-6.1">6.1</a>.  SHA-224 and SHA-256 Initialization</span>
-
-   For SHA-224, the initial hash value, H(0), consists of the following
-   32-bit words in hex:
-
-      H(0)0 = c1059ed8
-      H(0)1 = 367cd507
-      H(0)2 = 3070dd17
-      H(0)3 = f70e5939
-      H(0)4 = ffc00b31
-      H(0)5 = 68581511
-      H(0)6 = 64f98fa7
-      H(0)7 = befa4fa4
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                    [Page 12]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-13"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-   For SHA-256, the initial hash value, H(0), consists of the following
-   eight 32-bit words, in hex.  These words were obtained by taking the
-   first 32 bits of the fractional parts of the square roots of the
-   first eight prime numbers.
-
-      H(0)0 = 6a09e667
-      H(0)1 = bb67ae85
-      H(0)2 = 3c6ef372
-      H(0)3 = a54ff53a
-      H(0)4 = 510e527f
-      H(0)5 = 9b05688c
-      H(0)6 = 1f83d9ab
-      H(0)7 = 5be0cd19
-
-<span class="h3"><a class="selflink" id="section-6.2" href="https://datatracker.ietf.org/doc/html/rfc6234#section-6.2">6.2</a>.  SHA-224 and SHA-256 Processing</span>
-
-   SHA-224 and SHA-256 perform identical processing on message blocks
-   and differ only in how H(0) is initialized and how they produce their
-   final output.  They may be used to hash a message, M, having a length
-   of L bits, where 0 &lt;= L &lt; 2^64.  The algorithm uses (1) a message
-   schedule of sixty-four 32-bit words, (2) eight working variables of
-   32 bits each, and (3) a hash value of eight 32-bit words.
-
-   The words of the message schedule are labeled W0, W1, ..., W63.  The
-   eight working variables are labeled a, b, c, d, e, f, g, and h.  The
-   words of the hash value are labeled H(i)0, H(i)1, ..., H(i)7, which
-   will hold the initial hash value, H(0), replaced by each successive
-   intermediate hash value (after each message block is processed),
-   H(i), and ending with the final hash value, H(N), after all N blocks
-   are processed.  They also use two temporary words, T1 and T2.
-
-   The input message is padded as described in <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-4.1">Section 4.1</a> above, then
-   parsed into 512-bit blocks that are considered to be composed of
-   sixteen 32-bit words M(i)0, M(i)1, ..., M(i)15.  The following
-   computations are then performed for each of the N message blocks.
-   All addition is performed modulo 2^32.
-
-   For i = 1 to N
-
-      1. Prepare the message schedule W:
-         For t = 0 to 15
-            Wt = M(i)t
-         For t = 16 to 63
-            Wt = SSIG1(W(t-2)) + W(t-7) + SSIG0(w(t-15)) + W(t-16)
-
-
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                    [Page 13]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-14"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-      2. Initialize the working variables:
-         a = H(i-1)0
-         b = H(i-1)1
-         c = H(i-1)2
-         d = H(i-1)3
-         e = H(i-1)4
-         f = H(i-1)5
-         g = H(i-1)6
-         h = H(i-1)7
-
-      3. Perform the main hash computation:
-         For t = 0 to 63
-            T1 = h + BSIG1(e) + CH(e,f,g) + Kt + Wt
-            T2 = BSIG0(a) + MAJ(a,b,c)
-            h = g
-            g = f
-            f = e
-            e = d + T1
-            d = c
-            c = b
-            b = a
-            a = T1 + T2
-
-      4. Compute the intermediate hash value H(i)
-         H(i)0 = a + H(i-1)0
-         H(i)1 = b + H(i-1)1
-         H(i)2 = c + H(i-1)2
-         H(i)3 = d + H(i-1)3
-         H(i)4 = e + H(i-1)4
-         H(i)5 = f + H(i-1)5
-         H(i)6 = g + H(i-1)6
-         H(i)7 = h + H(i-1)7
-
-   After the above computations have been sequentially performed for all
-   of the blocks in the message, the final output is calculated.  For
-   SHA-256, this is the concatenation of all of H(N)0, H(N)1, through
-   H(N)7.  For SHA-224, this is the concatenation of H(N)0, H(N)1,
-   through H(N)6.
-
-<span class="h3"><a class="selflink" id="section-6.3" href="https://datatracker.ietf.org/doc/html/rfc6234#section-6.3">6.3</a>.  SHA-384 and SHA-512 Initialization</span>
-
-   For SHA-384, the initial hash value, H(0), consists of the following
-   eight 64-bit words, in hex.  These words were obtained by taking the
-   first 64 bits of the fractional parts of the square roots of the
-   ninth through sixteenth prime numbers.
-
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                    [Page 14]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-15"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-         H(0)0 = cbbb9d5dc1059ed8
-         H(0)1 = 629a292a367cd507
-         H(0)2 = 9159015a3070dd17
-         H(0)3 = 152fecd8f70e5939
-         H(0)4 = 67332667ffc00b31
-         H(0)5 = 8eb44a8768581511
-         H(0)6 = db0c2e0d64f98fa7
-         H(0)7 = 47b5481dbefa4fa4
-
-   For SHA-512, the initial hash value, H(0), consists of the following
-   eight 64-bit words, in hex.  These words were obtained by taking the
-   first 64 bits of the fractional parts of the square roots of the
-   first eight prime numbers.
-
-         H(0)0 = 6a09e667f3bcc908
-         H(0)1 = bb67ae8584caa73b
-         H(0)2 = 3c6ef372fe94f82b
-         H(0)3 = a54ff53a5f1d36f1
-         H(0)4 = 510e527fade682d1
-         H(0)5 = 9b05688c2b3e6c1f
-         H(0)6 = 1f83d9abfb41bd6b
-         H(0)7 = 5be0cd19137e2179
-
-<span class="h3"><a class="selflink" id="section-6.4" href="https://datatracker.ietf.org/doc/html/rfc6234#section-6.4">6.4</a>.  SHA-384 and SHA-512 Processing</span>
-
-   SHA-384 and SHA-512 perform identical processing on message blocks
-   and differ only in how H(0) is initialized and how they produce their
-   final output.  They may be used to hash a message, M, having a length
-   of L bits, where 0 &lt;= L &lt; 2^128.  The algorithm uses (1) a message
-   schedule of eighty 64-bit words, (2) eight working variables of 64
-   bits each, and (3) a hash value of eight 64-bit words.
-
-   The words of the message schedule are labeled W0, W1, ..., W79.  The
-   eight working variables are labeled a, b, c, d, e, f, g, and h.  The
-   words of the hash value are labeled H(i)0, H(i)1, ..., H(i)7, which
-   will hold the initial hash value, H(0), replaced by each successive
-   intermediate hash value (after each message block is processed),
-   H(i), and ending with the final hash value, H(N) after all N blocks
-   are processed.
-
-   The input message is padded as described in <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-4.2">Section 4.2</a> above, then
-   parsed into 1024-bit blocks that are considered to be composed of
-   sixteen 64-bit words M(i)0, M(i)1, ..., M(i)15.  The following
-   computations are then performed for each of the N message blocks.
-   All addition is performed modulo 2^64.
-
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                    [Page 15]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-16"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-   For i = 1 to N
-
-      1. Prepare the message schedule W:
-         For t = 0 to 15
-            Wt = M(i)t
-         For t = 16 to 79
-            Wt = SSIG1(W(t-2)) + W(t-7) + SSIG0(W(t-15)) + W(t-16)
-
-      2. Initialize the working variables:
-         a = H(i-1)0
-         b = H(i-1)1
-         c = H(i-1)2
-         d = H(i-1)3
-         e = H(i-1)4
-         f = H(i-1)5
-         g = H(i-1)6
-         h = H(i-1)7
-
-      3. Perform the main hash computation:
-         For t = 0 to 79
-            T1 = h + BSIG1(e) + CH(e,f,g) + Kt + Wt
-            T2 = BSIG0(a) + MAJ(a,b,c)
-            h = g
-            g = f
-            f = e
-            e = d + T1
-            d = c
-            c = b
-            b = a
-            a = T1 + T2
-
-         4. Compute the intermediate hash value H(i)
-            H(i)0 = a + H(i-1)0
-            H(i)1 = b + H(i-1)1
-            H(i)2 = c + H(i-1)2
-            H(i)3 = d + H(i-1)3
-            H(i)4 = e + H(i-1)4
-            H(i)5 = f + H(i-1)5
-            H(i)6 = g + H(i-1)6
-            H(i)7 = h + H(i-1)7
-
-   After the above computations have been sequentially performed for all
-   of the blocks in the message, the final output is calculated.  For
-   SHA-512, this is the concatenation of all of H(N)0, H(N)1, through
-   H(N)7.  For SHA-384, this is the concatenation of H(N)0, H(N)1,
-   through H(N)5.
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                    [Page 16]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-17"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-<span class="h2"><a class="selflink" id="section-7" href="https://datatracker.ietf.org/doc/html/rfc6234#section-7">7</a>.  HKDF- and SHA-Based HMACs</span>
-
-   Below are brief descriptions and pointers to more complete
-   descriptions and code for (1) SHA-based HMACs and (2) an HMAC-based
-   extract-and-expand key derivation function.  Both HKDF and HMAC were
-   devised by Hugo Krawczyk.
-
-<span class="h3"><a class="selflink" id="section-7.1" href="https://datatracker.ietf.org/doc/html/rfc6234#section-7.1">7.1</a>.  SHA-Based HMACs</span>
-
-   HMAC is a method for computing a keyed MAC (Message Authentication
-   Code) using a hash function as described in [<a href="https://datatracker.ietf.org/doc/html/rfc2104" title="&quot;HMAC: Keyed- Hashing for Message Authentication&quot;">RFC2104</a>].  It uses a key
-   to mix in with the input text to produce the final hash.
-
-   Sample code is also provided, in <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-8.3">Section 8.3</a> below, to perform HMAC
-   based on any of the SHA algorithms described herein.  The sample code
-   found in [<a href="https://datatracker.ietf.org/doc/html/rfc2104" title="&quot;HMAC: Keyed- Hashing for Message Authentication&quot;">RFC2104</a>] was written in terms of a specified text size.
-   Since SHA is defined in terms of an arbitrary number of bits, the
-   sample HMAC code has been written to allow the text input to HMAC to
-   have an arbitrary number of octets and bits.  A fixed-length
-   interface is also provided.
-
-<span class="h3"><a class="selflink" id="section-7.2" href="https://datatracker.ietf.org/doc/html/rfc6234#section-7.2">7.2</a>.  HKDF</span>
-
-   HKDF is a specific Key Derivation Function (KDF), that is, a function
-   of initial keying material from which the KDF derives one or more
-   cryptographically strong secret keys.  HKDF, which is described in
-   [<a href="https://datatracker.ietf.org/doc/html/rfc5869" title="&quot;HMAC-based Extract-and-Expand Key Derivation Function (HKDF)&quot;">RFC5869</a>], is based on HMAC.
-
-   Sample code for HKDF is provided in <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-8.4">Section 8.4</a> below.
-
-<span class="h2"><a class="selflink" id="section-8" href="https://datatracker.ietf.org/doc/html/rfc6234#section-8">8</a>.  C Code for SHAs, HMAC, and HKDF</span>
-
-   Below is a demonstration implementation of these secure hash
-   functions in C.  <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-8.1">Section 8.1</a> contains the header file sha.h that
-   declares all constants, structures, and functions used by the SHA and
-   HMAC functions.  It includes conditionals based on the state of
-   definition of USE_32BIT_ONLY that, if that symbol is defined at
-   compile time, avoids 64-bit operations.  It also contains sha-
-   private.h that provides some declarations common to all the SHA
-   functions.  <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-8.2">Section 8.2</a> contains the C code for sha1.c, sha224-256.c,
-   sha384-512.c, and usha.c.  <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-8.3">Section 8.3</a> contains the C code for the
-   HMAC functions, and <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-8.4">Section 8.4</a> contains the C code for HKDF.
-   <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-8.5">Section 8.5</a> contains a test driver to exercise the code.
-
-   For each of the digest lengths $$$, there is the following set of
-   constants, a structure, and functions:
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                    [Page 17]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-18"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-   Constants:
-      SHA$$$HashSize      number of octets in the hash
-      SHA$$$HashSizeBits  number of bits in the hash
-      SHA$$$_Message_Block_Size
-                          number of octets used in the intermediate
-                          message blocks
-      Most functions return an enum value that is one of:
-        shaSuccess(0)      on success
-        shaNull(1)         when presented with a null pointer parameter
-        shaInputTooLong(2)  when the input data is too long
-        shaStateError(3)   when SHA$$$Input is called after
-                          SHA$$$FinalBits or SHA$$$Result
-
-   Structure:
-      typedef SHA$$$Context
-                          an opaque structure holding the complete state
-                          for producing the hash
-
-   Functions:
-      int SHA$$$Reset(SHA$$$Context *context);
-            Reset the hash context state.
-      int SHA$$$Input(SHA$$$Context *context, const uint8_t *octets,
-                  unsigned int bytecount);
-            Incorporate bytecount octets into the hash.
-      int SHA$$$FinalBits(SHA$$$Context *, const uint8_t octet,
-                  unsigned int bitcount);
-            Incorporate bitcount bits into the hash.  The bits are in
-            the upper portion of the octet.  SHA$$$Input() cannot be
-            called after this.
-      int SHA$$$Result(SHA$$$Context *,
-                  uint8_t Message_Digest[SHA$$$HashSize]);
-            Do the final calculations on the hash and copy the value
-            into Message_Digest.
-
-   In addition, functions with the prefix USHA are provided that take a
-   SHAversion value (SHA$$$) to select the SHA function suite.  They add
-   the following constants, structure, and functions:
-
-   Constants:
-      shaBadParam(4)      constant returned by USHA functions when
-                          presented with a bad SHAversion (SHA$$$)
-                          parameter or other illegal parameter values
-      USAMaxHashSize      maximum of the SHA hash sizes
-      SHA$$$              SHAversion enumeration values, used by USHA,
-                          HMAC, and HKDF functions to select the SHA
-                          function suite
-
-
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                    [Page 18]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-19"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-   Structure:
-      typedef USHAContext
-                          an opaque structure holding the complete state
-                          for producing the hash
-
-   Functions:
-      int USHAReset(USHAContext *context, SHAversion whichSha);
-            Reset the hash context state.
-      int USHAInput(USHAContext context*,
-                  const uint8_t *bytes, unsigned int bytecount);
-            Incorporate bytecount octets into the hash.
-      int USHAFinalBits(USHAContext *context,
-                  const uint8_t bits, unsigned int bitcount);
-            Incorporate bitcount bits into the hash.
-      int USHAResult(USHAContext *context,
-                  uint8_t Message_Digest[USHAMaxHashSize]);
-            Do the final calculations on the hash and copy the value
-            into Message_Digest.  Octets in Message_Digest beyond
-            USHAHashSize(whichSha) are left untouched.
-      int USHAHashSize(enum SHAversion whichSha);
-            The number of octets in the given hash.
-      int USHAHashSizeBits(enum SHAversion whichSha);
-            The number of bits in the given hash.
-      int USHABlockSize(enum SHAversion whichSha);
-            The internal block size for the given hash.
-      const char *USHAHashName(enum SHAversion whichSha);
-            This function will return the name of the given SHA
-            algorithm as a string.
-
-   The HMAC functions follow the same pattern to allow any length of
-   text input to be used.
-
-   Structure:
-      typedef HMACContext an opaque structure holding the complete state
-                          for producing the keyed message digest (MAC)
-
-   Functions:
-      int hmacReset(HMACContext *ctx, enum SHAversion whichSha,
-                  const unsigned char *key, int key_len);
-            Reset the MAC context state.
-      int hmacInput(HMACContext *ctx, const unsigned char *text,
-                  int text_len);
-            Incorporate text_len octets into the MAC.
-      int hmacFinalBits(HMACContext *ctx, const uint8_t bits,
-                  unsigned int bitcount);
-            Incorporate bitcount bits into the MAC.
-      int hmacResult(HMACContext *ctx,
-                  uint8_t Message_Digest[USHAMaxHashSize]);
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                    [Page 19]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-20"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-            Do the final calculations on the MAC and copy the value into
-            Message_Digest.  Octets in Message_Digest beyond
-            USHAHashSize(whichSha) are left untouched.
-
-   In addition, a combined interface is provided, similar to that shown
-   in [<a href="https://datatracker.ietf.org/doc/html/rfc2104" title="&quot;HMAC: Keyed- Hashing for Message Authentication&quot;">RFC2104</a>], that allows a fixed-length text input to be used.
-
-      int hmac(SHAversion whichSha,
-                  const unsigned char *text, int text_len,
-                  const unsigned char *key, int key_len,
-                  uint8_t Message_Digest[USHAMaxHashSize]);
-            Calculate the given digest for the given text and key, and
-            return the resulting MAC.  Octets in Message_Digest beyond
-            USHAHashSize(whichSha) are left untouched.
-
-   The HKDF functions follow the same pattern to allow any length of
-   text input to be used.
-
-   Structure:
-      typedef HKDFContext an opaque structure holding the complete state
-                          for producing the keying material
-   Functions:
-      int hkdfReset(HKDFContext *context, enum SHAversion whichSha,
-                  const unsigned char *salt, int salt_len)
-            Reset the key derivation state and initialize it with the
-            salt_len octets of the optional salt.
-      int hkdfInput(HKDFContext *context, const unsigned char *ikm,
-                  int ikm_len)
-            Incorporate ikm_len octets into the entropy extractor.
-      int hkdfFinalBits(HKDFContext *context, uint8_t ikm_bits,
-                  unsigned int ikm_bit_count)
-            Incorporate ikm_bit_count bits into the entropy extractor.
-      int hkdfResult(HKDFContext *context,
-                  uint8_t prk[USHAMaxHashSize],
-                  const unsigned char *info, int info_len,
-                  uint8_t okm[ ], int okm_len)
-            Finish the HKDF extraction and perform the final HKDF
-            expansion, storing the okm_len octets into output keying
-            material (okm).  Optionally store the pseudo-random key
-            (prk) that is generated internally.
-
-   In addition, combined interfaces are provided, similar to that shown
-   in [<a href="https://datatracker.ietf.org/doc/html/rfc5869" title="&quot;HMAC-based Extract-and-Expand Key Derivation Function (HKDF)&quot;">RFC5869</a>], that allows a fixed-length text input to be used.
-
-      int hkdfExtract(SHAversion whichSha,
-                  const unsigned char *salt, int salt_len,
-                  const unsigned char *ikm, int ikm_len,
-                  uint8_t prk[USHAMaxHashSize])
-
-
-
-<span class="grey">Eastlake &amp; Hansen             Informational                    [Page 20]</span></pre>
-<hr class="noprint"><!--NewPage--><pre class="newpage"><span id="page-21"></span>
-<span class="grey"><a href="https://datatracker.ietf.org/doc/html/rfc6234">RFC 6234</a>                SHAs, HMAC-SHAs, and HKDF               May 2011</span>
-
-
-            Perform HKDF extraction, combining the salt_len octets of
-            the optional salt with the ikm_len octets of the input
-            keying material (ikm) to form the pseudo-random key prk.
-            The output prk must be large enough to hold the octets
-            appropriate for the given hash type.
-
-      int hkdfExpand(SHAversion whichSha,
-                  const uint8_t prk[ ], int prk_len,
-                  const unsigned char *info, int info_len,
-                  uint8_t okm[ ], int okm_len)
-            Perform HKDF expansion, combining the prk_len octets of the
-            pseudo-random key prk with the info_len octets of info to
-            form the okm_len octets stored in okm.
-
-      int hkdf(SHAversion whichSha,
-                  const unsigned char *salt, int salt_len,
-                  const unsigned char *ikm, int ikm_len,
-                  const unsigned char *info, int info_len,
-                  uint8_t okm[ ], int okm_len)
-            This combined interface performs both HKDF extraction and
-            expansion.  The variables are the same as in hkdfExtract()
-            and hkdfExpand().
-
-<span class="h3"><a class="selflink" id="section-8.1" href="https://datatracker.ietf.org/doc/html/rfc6234#section-8.1">8.1</a>.  The Header Files</span>
-
-<span class="h4"><a class="selflink" id="section-8.1.1" href="https://datatracker.ietf.org/doc/html/rfc6234#section-8.1.1">8.1.1</a>.  The .h file</span>
-
-   The following sha.h file, as stated in the comments within the file,
-   assumes that &lt;stdint.h&gt; is available on your system.  If it is not,
-   you should change to including &lt;stdint-example.h&gt;, provided in
-   <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-8.1.2">Section 8.1.2</a>, or the like.
-
-
-
-========= This is used in verything.
-**************************** sha.h **********
-
-RFC 6234</a> for details.
-
-#ifndef _SHA_H_
-#define _SHA_H_
-
-
- *  Description:
- *      This file implements the Secure Hash Algorithms
- *      as defined in the U.S. National Institute of Standards
- *      and Technology Federal Information Processing Standards
- *      Publication (FIPS PUB) 180-3 published in October 2008
- *      and formerly defined in its predecessors, FIPS PUB 180-1
- *      and FIP PUB 180-2.
- *
- *      A combined document showing all algorithms is available at
- *              <a href="http://csrc.nist.gov/publications/fips/">http://csrc.nist.gov/publications/fips/</a>
- *                     fips180-3/fips180-3_final.pdf
- *
- *      The five hashes are defined in these sizes:
- *              SHA-1           20 byte / 160 bit
- *              SHA-224         28 byte / 224 bit
- *              SHA-256         32 byte / 256 bit
- *              SHA-384         48 byte / 384 bit
- *              SHA-512         64 byte / 512 bit
- *
-
-
-
-
- *  Compilation Note:
- *    These files may be compiled with two options:
- *        USE_32BIT_ONLY - use 32-bit arithmetic only, for systems
- *                         without 64-bit integers
- *
- *        USE_MODIFIED_MACROS - use alternate form of the SHA_Ch()
- *                         and SHA_Maj() macros that are equivalent
- *                         and potentially faster on many systems
- *
-
-
-#include &lt;stdint.h&gt;
-
-
- * If you do not have the ISO standard stdint.h header file, then you
- * must typedef the following:
- *    name              meaning
- *  uint64_t         unsigned 64-bit integer
- *  uint32_t         unsigned 32-bit integer
- *  uint8_t          unsigned 8-bit integer (i.e., unsigned char)
- *  int_least16_t    integer of &gt;= 16 bits
- *
- * See stdint-example.h
-
-
-#ifndef _SHA_enum_
-#define _SHA_enum_
-
- *  All SHA functions return one of these values.
+// All SHA functions return one of these values.
 
 enum {
     shaSuccess = 0,
     shaNull,  // Null pointer parameter
-    shaInputTooLong,   // input data too long
+    shaInputTooLong,
     shaStateError,
-// called Input after FinalBits or Result
-    shaBadParam      // passed a bad parameter
+    shaBadParam
 };
-#endif  //  _SHA_enum_
-
-
-
- *  These constants hold size information for each of the SHA
- *  hashing operations
 
 
 enum {
-    SHA1_Message_Block_Size = 64, SHA224_Message_Block_Size = 64,
-    SHA256_Message_Block_Size = 64, SHA384_Message_Block_Size = 128,
+    SHA1_Message_Block_Size = 64,
+    SHA224_Message_Block_Size = 64,
+    SHA256_Message_Block_Size = 64,
+    SHA384_Message_Block_Size = 128,
     SHA512_Message_Block_Size = 128,
-    USHA_Max_Message_Block_Size = SHA512_Message_Block_Size,
-
-
-
-
-    SHA1HashSize = 20, SHA224HashSize = 28, SHA256HashSize = 32,
-    SHA384HashSize = 48, SHA512HashSize = 64,
+    USHA_Max_Message_Block_Size =
+                       SHA512_Message_Block_Size,
+    SHA1HashSize = 20,
+    SHA224HashSize = 28,
+    SHA256HashSize = 32,
+    SHA384HashSize = 48,
+    SHA512HashSize = 64,
     USHAMaxHashSize = SHA512HashSize,
-
-    SHA1HashSizeBits = 160, SHA224HashSizeBits = 224,
-    SHA256HashSizeBits = 256, SHA384HashSizeBits = 384,
-    SHA512HashSizeBits = 512, USHAMaxHashSizeBits = SHA512HashSizeBits
+    SHA1HashSizeBits = 160,
+    SHA224HashSizeBits = 224,
+    SHA256HashSizeBits = 256,
+    SHA384HashSizeBits = 384,
+    SHA512HashSizeBits = 512,
+    USHAMaxHashSizeBits = SHA512HashSizeBits
 };
 
-
- *  These constants are used in the USHA (Unified SHA) functions.
 
 typedef enum SHAversion {
     SHA1, SHA224, SHA256, SHA384, SHA512
 } SHAversion;
 
 
- *  This structure will hold context information for the SHA-1
- *  hashing operation.
 
-typedef struct SHA1Context {
-    uint32_t Intermediate_Hash[SHA1HashSize/4];
-               // Message Digest
+typedef struct SHA256Context
+  {
+  Uint32 Intermediate_Hash[SHA256HashSize/4];
+                       // Message Digest
+  Uint32 Length_High;
+              // Message length in bits
+  Uint32 Length_Low;  // Message length in bits
 
-    uint32_t Length_High; // Message length in bits
-    uint32_t Length_Low;   // Message length in bits
+  Uint32 Message_Block_Index;
+               // Message_Block array index
+               // 512-bit message blocks
+  Uint8 Message_Block[SHA256_Message_Block_Size];
 
+  Int32 Computed; // Is the hash computed?
+  Int32 Corrupted; // Cumulative corruption code
 
-    int_least16_t Message_Block_Index;
-// Message_Block array index
-          // 512-bit message blocks
-    uint8_t Message_Block[SHA1_Message_Block_Size];
-
-    int Computed;  // Is the hash computed?
-    int Corrupted;    // Cumulative corruption code
-} SHA1Context;
-
-*
- *  This structure will hold context information for the SHA-256
- *  hashing operation.
- *
-
-typedef struct SHA256Context {
-    uint32_t Intermediate_Hash[SHA256HashSize/4];
-// Message Digest
-
-    uint32_t Length_High;
-// Message length in bits
-    uint32_t Length_Low;  // Message length in bits
-
-
-    int_least16_t Message_Block_Index;
-// Message_Block array index
-            // 512-bit message blocks
-    uint8_t Message_Block[SHA256_Message_Block_Size];
-
-
-
-
-    int Computed;
-// Is the hash computed?
-    int Corrupted;
-// Cumulative corruption code
 } SHA256Context;
 
-*
- *  This structure will hold context information for the SHA-512
- *  hashing operation.
 
-typedef struct SHA512Context {
-#ifdef USE_32BIT_ONLY
-    uint32_t Intermediate_Hash[SHA512HashSize/4];
-// Message Digest
-    uint32_t Length[4];  // Message length in bits
-#else // !USE_32BIT_ONLY
-    uint64_t Intermediate_Hash[SHA512HashSize/8];
-// Message Digest
-    uint64_t Length_High, Length_Low;
-// Message length in bits
-#endif // USE_32BIT_ONLY
 
-    int_least16_t Message_Block_Index;
-// Message_Block array index
+typedef struct SHA512Context
+  {
+  Uint64 Intermediate_Hash[SHA512HashSize/8];
+                             // Message Digest
+  Uint64 Length_High;
+  Uint64 Length_Low; // Message length in bits
 
-// 1024-bit message blocks
-    uint8_t Message_Block[SHA512_Message_Block_Size];
+  Int32 Message_Block_Index;
+                  // Message_Block array index
 
-    int Computed;
-// Is the hash computed?
-    int Corrupted;
-// Cumulative corruption code
+  // 1024-bit message blocks
+  Uint8 Message_Block[SHA512_Message_Block_Size];
+
+  Int32 Computed; // Is the hash computed?
+  Int32 Corrupted; // Cumulative corruption code
 } SHA512Context;
 
 
- *  This structure will hold context information for the SHA-224
- *  hashing operation.  It uses the SHA-256 structure for computation.
 
-typedef struct SHA256Context SHA224Context;
-
-
- *  This structure will hold context information for the SHA-384
- *  hashing operation.  It uses the SHA-512 structure for computation.
-
-typedef struct SHA512Context SHA384Context;
-
-
- *  This structure holds context information for all SHA
- *  hashing operations.
-
-typedef struct USHAContext {
-    int whichSha;     //which SHA is being used
-    union {
-      SHA1Context sha1Context;
-      SHA224Context sha224Context; SHA256Context sha256Context;
-      SHA384Context sha384Context; SHA512Context sha512Context;
+typedef struct USHAContext
+  {
+  Int32 whichSha;     //which SHA is being used
+  union
+    {
+    SHA256Context sha256Context;
+    SHA512Context sha512Context;
     } ctx;
 
 } USHAContext;
 
-*
- *  This structure will hold context information for the HMAC
- *  keyed-hashing operation.
- *
 
+
+/*
 typedef struct HMACContext {
     int whichSha;    // which SHA is being used
     int hashSize;    //hash size of SHA being used
@@ -1058,11 +192,11 @@ typedef struct HMACContext {
     int Corrupted;   // Cumulative corruption code
 
 } HMACContext;
+*/
 
-*
- *  This structure will hold context information for the HKDF
- *  extract-and-expand Key Derivation Functions.
 
+
+/*
 typedef struct HKDFContext {
     int whichSha;   // which SHA is being used
     HMACContext hmacContext;
@@ -1073,31 +207,39 @@ typedef struct HKDFContext {
     int Computed; //  Is the key material computed?
     int Corrupted; // Cumulative corruption code
 } HKDFContext;
+*/
+
 
 
 // SHA-256
-extern int SHA256Reset(SHA256Context *);
-extern int SHA256Input(SHA256Context *, const uint8_t *bytes,
-                       unsigned int bytecount);
-extern int SHA256FinalBits(SHA256Context *, uint8_t bits,
-                           unsigned int bit_count);
-extern int SHA256Result(SHA256Context *,
-                        uint8_t Message_Digest[SHA256HashSize]);
+extern Int32 SHA256Reset( SHA256Context * );
 
+extern Int32 SHA256Input( SHA256Context *,
+                       const Uint8 *bytes,
+                       Uint32 bytecount );
 
+// extern Int32 SHA256FinalBits( SHA256Context *,
+//                   Uint8 bits,
+//                   Uint32 bit_count );
+
+extern Int32 SHA256Result( SHA256Context *,
+            Uint8 Message_Digest[SHA256HashSize] );
+
+/*
 // SHA-512
-extern int SHA512Reset(SHA512Context *);
-extern int SHA512Input(SHA512Context *, const uint8_t *bytes,
+extern Int32 SHA512Reset(SHA512Context *);
+extern Int32 SHA512Input(SHA512Context *, const uint8_t *bytes,
                        unsigned int bytecount);
-extern int SHA512FinalBits(SHA512Context *, uint8_t bits,
+extern Int32 SHA512FinalBits(SHA512Context *, uint8_t bits,
                            unsigned int bit_count);
-extern int SHA512Result(SHA512Context *,
+extern Int32 SHA512Result(SHA512Context *,
                         uint8_t Message_Digest[SHA512HashSize]);
+*/
 
 
 
 
-
+/*
 // Unified SHA functions, chosen by whichSha
 extern int USHAReset(USHAContext *context, SHAversion whichSha);
 extern int USHAInput(USHAContext *context,
@@ -1175,333 +317,126 @@ extern int hkdfResult(HKDFContext *context,
                       uint8_t prk[USHAMaxHashSize],
                       const unsigned char *info, int info_len,
                       uint8_t okm[USHAMaxHashSize], int okm_len);
-#endif // _SHA_H_
+
+*/
+////////////////////////////////////
 
 
 
 
-// typedef unsigned long long uint64_t;
-// typedef unsigned int       uint32_t;
-// typedef unsigned char      uint8_t;
-
-// typedef int int_least32_t;
-// typedef short int_least16_t;  It is >= 16 bits.
-
-
-   The sha-private.h header file contains definitions that should only
-   be needed internally in the other code in this document.  These
-   definitions should not be needed in application code calling the code
-   provided in this document.
-
-* sha-private.h
-
-#ifndef _SHA_PRIVATE__H
-#define _SHA_PRIVATE__H
-
-*
- * These definitions are defined in FIPS 180-3, <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-4.1">section 4.1</a>.
- * Ch() and Maj() are defined identically in sections <a href="https://datatracker.ietf.org/doc/html/rfc6234#section-4.1.1">4.1.1</a>,
- * 4.1.2, and 4.1.3.
- *
- * The definitions used in FIPS 180-3 are as follows:
 
 
 
 
-#ifndef USE_MODIFIED_MACROS
-#define SHA_Ch(x,y,z)        (((x) &amp; (y)) ^ ((~(x)) &amp; (z)))
-#define SHA_Maj(x,y,z)       (((x) &amp; (y)) ^ ((x) &amp; (z)) ^ ((y) &amp; (z)))
-#else // USE_MODIFIED_MACROS
 
 
 
-*
- * The following definitions are equivalent and potentially faster.
 
+/////////////////////////
+// ******* sha224-256.c **
 
-#define SHA_Ch(x, y, z)      (((x) &amp; ((y) ^ (z))) ^ (z))
-#define SHA_Maj(x, y, z)     (((x) &amp; ((y) | (z))) | ((y) &amp; (z)))
-
-#endif // USE_MODIFIED_MACROS
-
-#define SHA_Parity(x, y, z)  ((x) ^ (y) ^ (z))
-
-#endif // SHA PrIVATE__H
+// Don't need SHA224/256FinalBits() because I
+// only use bytes.  Not some odd number of bits.
 
 
 
-************************* sha224-256.c **
-
-*
- * Description:
- *   This file implements the Secure Hash Algorithms SHA-224 and
- *   SHA-256 as defined in the U.S. National Institute of Standards
- *   and Technology Federal Information Processing Standards
- *   Publication (FIPS PUB) 180-3 published in October 2008
- *   and formerly defined in its predecessors, FIPS PUB 180-1
- *   and FIP PUB 180-2.
- *
- *   A combined document showing all algorithms is available at
- *       <a href="http://csrc.nist.gov/publications/fips/">http://csrc.nist.gov/publications/fips/</a>
- *              fips180-3/fips180-3_final.pdf
- *
- *   The SHA-224 and SHA-256 algorithms produce 224-bit and 256-bit
- *   message digests for a given data stream.  It should take about
- *   2**n steps to find a message with the same digest as a given
- *   message and 2**(n/2) to find any two messages with the same
- *   digest, when n is the digest size in bits.  Therefore, this
- *   algorithm can serve as a means of providing a
- *   "fingerprint" for a message.
- *
- * Portability Issues:
- *   SHA-224 and SHA-256 are defined in terms of 32-bit "words".
- *   This code uses &lt;stdint.h&gt; (included via "sha.h") to define 32-
- *   and 8-bit unsigned integer types.  If your C compiler does not
+// static uint32_t addTemp;
+// #define SHA224_256AddLength(context, length)               \
+//  (addTemp = (context)->Length_Low,
+//             (context)->Corrupted =
+//             (((context)->Length_Low +=
+//             (length)) < addTemp) &&
+//             (++(context)->Length_High == 0)
+//             ? shaInputTooLong :
+//             (context)->Corrupted )
 
 
+/*
+static Int32 SHA224_256Reset(
+                       SHA256Context *context,
+                       Uint32 *H0 );
+*/
 
- *   support 32-bit unsigned integers, this code is not
- *   appropriate.
- *
- * Caveats:
- *   SHA-224 and SHA-256 are designed to work with messages less
- *   than 2^64 bits long.  This implementation uses SHA224/256Input()
- *   to hash the bits that are a multiple of the size of an 8-bit
- *   octet, and then optionally uses SHA224/256FinalBits()
- *   to hash the final few bits of the input.
- *
-
-#include "sha.h"
-#include "sha-private.h"
-
-* Define the SHA shift, rotate left, and
-rotate right macros
-
-#define SHA256_SHR(bits,word)      ((word) &gt;&gt; (bits))
-#define SHA256_ROTL(bits,word)                         \
-  (((word) &lt;&lt; (bits)) | ((word) &gt;&gt; (32-(bits))))
-#define SHA256_ROTR(bits,word)                         \
-  (((word) &gt;&gt; (bits)) | ((word) &lt;&lt; (32-(bits))))
-
-// Define the SHA SIGMA and sigma macros
-#define SHA256_SIGMA0(word)   \
-  (SHA256_ROTR( 2,word) ^ SHA256_ROTR(13,word) ^ SHA256_ROTR(22,word))
-#define SHA256_SIGMA1(word)   \
-  (SHA256_ROTR( 6,word) ^ SHA256_ROTR(11,word) ^ SHA256_ROTR(25,word))
-#define SHA256_sigma0(word)   \
-  (SHA256_ROTR( 7,word) ^ SHA256_ROTR(18,word) ^ SHA256_SHR( 3,word))
-#define SHA256_sigma1(word)   \
-  (SHA256_ROTR(17,word) ^ SHA256_ROTR(19,word) ^ SHA256_SHR(10,word))
-
-*
- * Add "length" to the length.
- * Set Corrupted when overflow has occurred.
- *
-
-static uint32_t addTemp;
-#define SHA224_256AddLength(context, length)               \
-  (addTemp = (context)-&gt;Length_Low, (context)-&gt;Corrupted = \
-    (((context)-&gt;Length_Low += (length)) &lt; addTemp) &amp;&amp;     \
-    (++(context)-&gt;Length_High == 0) ? shaInputTooLong :    \
-                                      (context)-&gt;Corrupted )
+// static void SHA224_256ProcessMessageBlock(
+  //                 SHA256Context *context );
 
 
-static int SHA224_256Reset(SHA256Context *context, uint32_t *H0);
-static void SHA224_256ProcessMessageBlock(SHA256Context *context);
-static void SHA224_256Finalize(SHA256Context *context,
-  uint8_t Pad_Byte);
-static void SHA224_256PadMessage(SHA256Context *context,
+/*
+static void SHA224_256Finalize(
+                SHA256Context *context,
+                Uint8 Pad_Byte );
 
+static void SHA224_256PadMessage(
+                         SHA256Context *context,
+                         Uint8 Pad_Byte );
 
+static Int32 SHA224_256ResultN(
+                          SHA256Context *context,
+                          Uint8 Message_Digest[ ],
+                          Int32 HashSize );
 
-  uint8_t Pad_Byte);
-static int SHA224_256ResultN(SHA256Context *context,
-  uint8_t Message_Digest[ ], int HashSize);
+*/
 
 // Initial Hash Values: FIPS 180-3 <a
 
-static uint32_t SHA224_H0[SHA256HashSize/4] = {
+/*
+static Uint32 SHA224_H0[SHA256HashSize/4] = {
     0xC1059ED8, 0x367CD507, 0x3070DD17, 0xF70E5939,
     0xFFC00B31, 0x68581511, 0x64F98FA7, 0xBEFA4FA4
 };
 
+
 // Initial Hash Values: FIPS 180-3
 
-static uint32_t SHA256_H0[SHA256HashSize/4] = {
+static Uint32 SHA256_H0[SHA256HashSize/4] = {
   0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A,
   0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19
 };
 
-*
- * SHA224Reset
- *
- * Description:
- *   This function will initialize the SHA224Context in preparation
- *   for computing a new SHA224 message digest.
- *
- * Parameters:
- *   context: [in/out]
- *     The context to reset.
- *
- * Returns:
- *   sha Error Code.
- *
+*/
 
-/
-int SHA224Reset(SHA224Context *context)
+
+/*
+Int32 SHA256Input( SHA256Context *context,
+                   const Uint8 *message_array,
+                   Uint32 length )
 {
-  return SHA224_256Reset(context, SHA224_H0);
-}
+if( !context )
+  return shaNull;
 
-*
- * SHA224Input
- *
- * Description:
- *   This function accepts an array of octets as the next portion
- *   of the message.
- *
- * Parameters:
- *   context: [in/out]
- *     The SHA context to update.
- *   message_array[ ]: [in]
- *     An array of octets representing the next portion of
- *     the message.
+if( !length )
+  return shaSuccess;
 
+if( !message_array )
+  return shaNull;
 
+if( context->Computed )
+  return context->Corrupted = shaStateError;
 
+if( context->Corrupted )
+  return context->Corrupted;
 
- *   length: [in]
- *     The length of the message in message_array.
- *
- * Returns:
- *   sha Error Code.
- *
- *
-int SHA224Input(SHA224Context *context, const uint8_t *message_array,
-    unsigned int length)
-{
-  return SHA256Input(context, message_array, length);
-}
+while( length-- )
+  {
+  context->Message_Block[
+              context->Message_Block_Index++] =
+              *message_array;
 
-*
- * SHA224FinalBits
- *
- * Description:
- *   This function will add in any final bits of the message.
- *
- * Parameters:
- *   context: [in/out]
- *     The SHA context to update.
- *   message_bits: [in]
- *     The final bits of the message, in the upper portion of the
- *     byte.  (Use 0b###00000 instead of 0b00000### to input the
- *     three bits ###.)
- *   length: [in]
- *     The number of bits in message_bits, between 1 and 7.
- *
- * Returns:
- *   sha Error Code.
- *
-int SHA224FinalBits(SHA224Context *context,
-                    uint8_t message_bits, unsigned int length)
-{
-  return SHA256FinalBits(context, message_bits, length);
-}
+  if( (SHA224_256AddLength(context, 8) ==
+                    shaSuccess ) &&
+      (context->Message_Block_Index ==
+                         SHA256_Message_Block_Size))
+    {
+    SHA224_256ProcessMessageBlock( context );
+    }
 
-*
- * SHA224Result
- *
- * Description:
- *   This function will return the 224-bit message digest
- *   into the Message_Digest array provided by the caller.
- *   NOTE:
- *    The first octet of hash is stored in the element with index 0,
- *    the last octet of hash in the element with index 27.
- *
-
-
-
- * Parameters:
- *   context: [in/out]
- *     The context to use to calculate the SHA hash.
- *   Message_Digest[ ]: [out]
- *     Where the digest is returned.
- *
- * Returns:
- *   sha Error Code.
- *
-int SHA224Result(SHA224Context *context,
-    uint8_t Message_Digest[SHA224HashSize])
-{
-  return SHA224_256ResultN(context, Message_Digest, SHA224HashSize);
-}
-
-*
- * SHA256Reset
- *
- * Description:
- *   This function will initialize the SHA256Context in preparation
- *   for computing a new SHA256 message digest.
- *
- * Parameters:
- *   context: [in/out]
- *     The context to reset.
- *
- * Returns:
- *   sha Error Code.
- *
-int SHA256Reset(SHA256Context *context)
-{
-  return SHA224_256Reset(context, SHA256_H0);
-}
-
-*
- * SHA256Input
- *
- * Description:
- *   This function accepts an array of octets as the next portion
- *   of the message.
- *
- * Parameters:
- *   context: [in/out]
- *     The SHA context to update.
- *   message_array[ ]: [in]
- *     An array of octets representing the next portion of
- *     the message.
-
-
-
-
-
- *   length: [in]
- *     The length of the message in message_array.
- *
- * Returns:
- *   sha Error Code.
- *
-int SHA256Input(SHA256Context *context, const uint8_t *message_array,
-    unsigned int length)
-{
-  if (!context) return shaNull;
-  if (!length) return shaSuccess;
-  if (!message_array) return shaNull;
-  if (context-&gt;Computed) return context-&gt;Corrupted = shaStateError;
-  if (context-&gt;Corrupted) return context-&gt;Corrupted;
-
-  while (length--) {
-    context-&gt;Message_Block[context-&gt;Message_Block_Index++] =
-            *message_array;
-
-    if ((SHA224_256AddLength(context, 8) == shaSuccess) &amp;&amp;
-      (context-&gt;Message_Block_Index == SHA256_Message_Block_Size))
-      SHA224_256ProcessMessageBlock(context);
-
-    message_array++;
+  message_array++;
   }
 
-  return context-&gt;Corrupted;
-
+return context->Corrupted;
 }
+
+
 
 *
  * SHA256FinalBits
@@ -1617,49 +552,16 @@ static int SHA224_256Reset(SHA256Context *context, uint32_t *H0)
 
   return shaSuccess;
 }
-
-*
- * SHA224_256ProcessMessageBlock
- *
+*/
 
 
-
- * Description:
- *   This helper function will process the next 512 bits of the
- *   message stored in the Message_Block array.
- *
- * Parameters:
- *   context: [in/out]
- *     The SHA context to update.
- *
- * Returns:
- *   Nothing.
- *
- * Comments:
- *   Many of the variable names in this code, especially the
- *   single character names, were used because those were the
- *   names used in the Secure Hash Standard.
- *
-
-static void SHA224_256ProcessMessageBlock(SHA256Context *context)
+/*
+static void SHA224_256ProcessMessageBlock(
+                       SHA256Context *context)
 {
-  // Constants defined in FIPS 180-3
+// Constants defined in FIPS 180-3
 
-  static const uint32_t K[64] = {
-      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b,
-      0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01,
-      0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7,
-      0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
-      0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152,
-      0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
-      0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
-      0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-      0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819,
-      0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08,
-      0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f,
-      0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-      0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-  };
+
   int        t, t4;     // Loop counter
   uint32_t   temp1, temp2;  // Temporary word value
   uint32_t   W[64];      // Word sequence
@@ -1669,8 +571,10 @@ static void SHA224_256ProcessMessageBlock(SHA256Context *context)
   *
    * Initialize the first 16 words in the array W
    *
-  for (t = t4 = 0; t &lt; 16; t++, t4 += 4)
-    W[t] = (((uint32_t)context-&gt;Message_Block[t4]) &lt;&lt; 24) |
+
+
+  for (t = t4 = 0; t < 16; t++, t4 += 4)
+    W[t] = (Message_Block[t4]) << 24) |
            (((uint32_t)context-&gt;Message_Block[t4 + 1]) &lt;&lt; 16) |
            (((uint32_t)context-&gt;Message_Block[t4 + 2]) &lt;&lt; 8) |
            (((uint32_t)context-&gt;Message_Block[t4 + 3]));
@@ -1715,7 +619,12 @@ static void SHA224_256ProcessMessageBlock(SHA256Context *context)
 
   context-&gt;Message_Block_Index = 0;
 }
+*/
 
+
+
+
+/*
 *
  * SHA224_256Finalize
  *
@@ -1854,12 +763,26 @@ static int SHA224_256ResultN(SHA256Context *context,
 
   return shaSuccess;
 }
+*/
+////////////////////////////////////
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+/*
 ************************* sha384-512.c ***
  * Description:
  *   This file implements the Secure Hash Algorithms SHA-384 and

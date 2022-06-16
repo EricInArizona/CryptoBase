@@ -18,12 +18,11 @@
 // SHA-based HMAC and HKDF
 
 
+// Wikipedia article with a lot of links.
+// https://en.wikipedia.org/wiki/SHA-2
+
 // IETF Licensing and copyright stuff.
 #include "../CryptoBase/ShaLicense.txt"
-
-
-// The linux (Ubuntu) program sha256sum can
-// be used to compare and test what this does.
 
 
 #include "../CppBase/BasicTypes.h"
@@ -37,35 +36,173 @@
 class Sha256
   {
   private:
-  inline Uint32 add( const Uint32 x,
-                     const Uint32 y )
+
+// ===========
+// The padding is for the number of _bits_ not
+// bytes.
+// Maximum message size is 2^64 bits.
+
+
+// Uint32Array.h
+
+// Do I want a Uint128.h class?  All inline.
+
+
+// 512 bit blocks is 64 bytes. = 16 Uint32 values.
+
+  // A C++ compiler can inline these, so
+  // there is no need to have macro definitions.
+
+  static inline Uint32 add( const Uint32 x,
+                            const Uint32 y )
     {
     Uint64 result = x + y;
     // It's mod 2^32.
-    result = result & 0xFFFFFFFF;
-    return Casting::u64ToU32( result );
+    return result & 0xFFFFFFFF;
     }
 
+  // // &gt; is: >
 
-  inline Uint32 rotateR( const Uint32 x, 
+  static inline Uint32 rotateR( const Uint32 x,
                          const Uint32 howMuch )
     {
     // Like rotating around in a circle.
-    Uint64 result = (x >> howMuch) |
-                    (x << (32 - howMuch));
+    // ROTR^n(x) = (x >> n) OR (x <<(w-n))
 
-    return Casting::u64ToU32( result );
+    return (x >> howMuch) |
+           (x << (32 - howMuch));
     }
 
 
-  inline Uint32 rotateL( const Uint32 x, 
-                         const Uint32 howMuch )
+  static inline Uint32 rotateL( const Uint32 x,
+                           const Uint32 howMuch )
     {
-    Uint64 result = (x << howMuch) |
-                    (x >> (32 - howMuch));
-
-    return Casting::u64ToU32( result );
+    return (x << howMuch) |
+           (x >> (32 - howMuch));
     }
+
+  // The six functions:
+  // CH( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
+  // MAJ( x, y, z) = (x AND y) XOR (x AND z) XOR (y AND z)
+  // BSIG0(x) = ROTR^2(x) XOR ROTR^13(x) XOR ROTR^22(x)
+  // BSIG1(x) = ROTR^6(x) XOR ROTR^11(x) XOR ROTR^25(x)
+  // SSIG0(x) = ROTR^7(x) XOR ROTR^18(x) XOR SHR^3(x)
+  // SSIG1(x) = ROTR^17(x) XOR ROTR^19(x) XOR SHR^10(x)
+
+  static inline Uint32 ShaCh( const Uint32 x,
+                              const Uint32 y,
+                              const Uint32 z)
+    {
+    // CH( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
+    return (x & y) ^ ((!x) & z);
+    }
+
+  static inline Uint32 ShaMaj( const Uint32 x,
+                               const Uint32 y,
+                               const Uint32 z )
+    {
+    // MAJ( x, y, z) = (x AND y) XOR (x AND z)
+    //            XOR (y AND z)
+    return (x & y) ^ (x & z) ^ (y & z);
+    }
+
+  // These sigma functions are different for
+  // SHA 512.
+
+  // Notice how they did upper and lower case
+  // names for the sigma define statements.
+  // That comes from the greek sigma symbol,
+  // and there is a capital greek sigma and a
+  // lower case sigma.
+  // Upper case is B, lower case is S.
+  // B for Big, S for Small.
+
+  static inline Uint32 ShaBSigma0( const Uint32 x )
+    {
+    // BSIG0(x) = ROTR^2(x) XOR ROTR^13(x)
+    //               XOR ROTR^22(x)
+
+    // #define SHA256_SIGMA0(word)
+
+    return rotateR( x, 2 ) ^ rotateR( x, 13 ) ^
+                             rotateR( x, 22 );
+    }
+
+  static inline Uint32 ShaBSigma1( const Uint32 x )
+    {
+    // BSIG1(x) = ROTR^6(x) XOR ROTR^11(x) XOR
+    //                  ROTR^25(x)
+
+    // #define SHA256_SIGMA1(word)
+
+    return rotateR( x, 6 ) ^ rotateR( x, 11 ) ^
+                             rotateR( x, 25 );
+    }
+
+  static inline Uint32 ShaSSigma0( const Uint32 x )
+    {
+    // SSIG0(x) = ROTR^7(x) XOR ROTR^18(x) XOR
+    //  SHR^3(x)
+
+    // #define SHA256_sigma0(word)
+
+    return rotateR( x, 7 ) ^ rotateR( x, 18 ) ^
+                             (x >> 3);
+    }
+
+  static inline Uint32 ShaSSigma1( const Uint32 x )
+    {
+    // SSIG1(x) = ROTR^17(x) XOR ROTR^19(x) XOR
+    //  SHR^10(x)
+
+    // #define SHA256_sigma1(word)
+
+    return rotateR( x, 17 ) ^ rotateR( x, 19 ) ^
+                             (x >> 10);
+    }
+
+
+
+// #define SHA_Parity(x, y, z)  ((x) ^ (y) ^ (z))
+
+
+// Constants defined in FIPS 180-3
+
+static constexpr Uint32 K[64] = {
+      0x428a2f98, 0x71374491,
+      0xb5c0fbcf, 0xe9b5dba5,
+      0x3956c25b,0x59f111f1,
+      0x923f82a4, 0xab1c5ed5,
+      0xd807aa98, 0x12835b01,
+      0x243185be, 0x550c7dc3,
+      0x72be5d74, 0x80deb1fe,
+      0x9bdc06a7, 0xc19bf174,
+      0xe49b69c1, 0xefbe4786,
+      0x0fc19dc6, 0x240ca1cc,
+      0x2de92c6f, 0x4a7484aa,
+      0x5cb0a9dc, 0x76f988da,
+      0x983e5152, 0xa831c66d,
+      0xb00327c8, 0xbf597fc7,
+      0xc6e00bf3, 0xd5a79147,
+      0x06ca6351, 0x14292967,
+      0x27b70a85, 0x2e1b2138,
+      0x4d2c6dfc, 0x53380d13,
+      0x650a7354, 0x766a0abb,
+      0x81c2c92e, 0x92722c85,
+      0xa2bfe8a1, 0xa81a664b,
+      0xc24b8b70, 0xc76c51a3,
+      0xd192e819, 0xd6990624,
+      0xf40e3585, 0x106aa070,
+      0x19a4c116, 0x1e376c08,
+      0x2748774c, 0x34b0bcb5,
+      0x391c0cb3, 0x4ed8aa4a,
+      0x5b9cca4f, 0x682e6ff3,
+      0x748f82ee, 0x78a5636f,
+      0x84c87814, 0x8cc70208,
+      0x90befffa, 0xa4506ceb,
+      0xbef9a3f7, 0xc67178f2 };
+
+
 
   public:
 
