@@ -11,22 +11,22 @@
 // Make it work first, then make it work fast.
 
 
-// This code was adapted and made modern,
-// and converted to C++, from:
+
 // RFC 6234 -
 // US Secure Hash Algorithms (SHA and
-// SHA-based HMAC and HKDF
+// SHA-based HMAC and HKDF)
+
+// FIPS 180-2
 
 
 // Wikipedia article with a lot of links.
 // https://en.wikipedia.org/wiki/SHA-2
 
-// IETF Licensing and copyright stuff.
-#include "../CryptoBase/ShaLicense.txt"
-
 
 #include "../CppBase/BasicTypes.h"
-#include "../CppBase/CharArray.h"
+// #include "../CppBase/CharArray.h"
+#include "../CppBase/CharBuf.h"
+#include "../CppBase/Uint32Array.h"
 
 
 // SHA 256 works on 32 bit words.
@@ -36,25 +36,15 @@
 class Sha256
   {
   private:
+  Uint32Array intermediateHash;
+  // W is called the Message Schedule.
+  Uint32Array W;
 
-// ===========
-// The padding is for the number of _bits_ not
-// bytes.
-// Maximum message size is 2^64 bits.
+  // Some Intel processors have SHA instructions.
+  // _asm
 
-
-// Uint32Array.h
-
-// Do I want a Uint128.h class?  All inline.
-
-
-// 512 bit blocks is 64 bytes. = 16 Uint32 values.
-
-  // A C++ compiler can inline these, so
-  // there is no need to have macro definitions.
-
-  static inline Uint32 add( const Uint32 x,
-                            const Uint32 y )
+  static inline Uint32 shaAdd( const Uint32 x,
+                               const Uint32 y )
     {
     Uint64 result = x + y;
     // It's mod 2^32.
@@ -81,15 +71,39 @@ class Sha256
            (x >> (32 - howMuch));
     }
 
-  // The six functions:
+  // The six functions for SHA 256:
   // CH( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
-  // MAJ( x, y, z) = (x AND y) XOR (x AND z) XOR (y AND z)
-  // BSIG0(x) = ROTR^2(x) XOR ROTR^13(x) XOR ROTR^22(x)
-  // BSIG1(x) = ROTR^6(x) XOR ROTR^11(x) XOR ROTR^25(x)
-  // SSIG0(x) = ROTR^7(x) XOR ROTR^18(x) XOR SHR^3(x)
-  // SSIG1(x) = ROTR^17(x) XOR ROTR^19(x) XOR SHR^10(x)
+  // MAJ( x, y, z) = (x AND y) XOR (x AND z) XOR
+  //               (y AND z)
+  // BSIG0(x) = ROTR^2(x) XOR ROTR^13(x) XOR
+  //                  ROTR^22(x)
+  // BSIG1(x) = ROTR^6(x) XOR ROTR^11(x) XOR
+  //                        ROTR^25(x)
+  // SSIG0(x) = ROTR^7(x) XOR ROTR^18(x) XOR
+  //                                  SHR^3(x)
+  // SSIG1(x) = ROTR^17(x) XOR ROTR^19(x) XOR
+  //                                 SHR^10(x)
 
-  static inline Uint32 ShaCh( const Uint32 x,
+  // The 6 functions for SHA 512.
+  // These are for 64 bit words.
+  // Some rotate numbers are higher because it
+  // has 64 bits to work with.
+  // CH( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
+  // MAJ( x, y, z) = (x AND y) XOR (x AND z) XOR
+  //               (y AND z)
+  // BSIG0(x) = ROTR^28(x) XOR ROTR^34(x) XOR
+  //         ROTR^39(x)
+  // BSIG1(x) = ROTR^14(x) XOR ROTR^18(x) XOR
+  //                   ROTR^41(x)
+  // SSIG0(x) = ROTR^1(x) XOR ROTR^8(x) XOR
+  //                SHR^7(x)
+  // SSIG1(x) = ROTR^19(x) XOR ROTR^61(x) XOR
+  //              SHR^6(x)
+
+
+
+
+  static inline Uint32 shaCh( const Uint32 x,
                               const Uint32 y,
                               const Uint32 z)
     {
@@ -97,7 +111,7 @@ class Sha256
     return (x & y) ^ ((!x) & z);
     }
 
-  static inline Uint32 ShaMaj( const Uint32 x,
+  static inline Uint32 shaMaj( const Uint32 x,
                                const Uint32 y,
                                const Uint32 z )
     {
@@ -117,7 +131,7 @@ class Sha256
   // Upper case is B, lower case is S.
   // B for Big, S for Small.
 
-  static inline Uint32 ShaBSigma0( const Uint32 x )
+  static inline Uint32 shaBSigma0( const Uint32 x )
     {
     // BSIG0(x) = ROTR^2(x) XOR ROTR^13(x)
     //               XOR ROTR^22(x)
@@ -128,7 +142,7 @@ class Sha256
                              rotateR( x, 22 );
     }
 
-  static inline Uint32 ShaBSigma1( const Uint32 x )
+  static inline Uint32 shaBSigma1( const Uint32 x )
     {
     // BSIG1(x) = ROTR^6(x) XOR ROTR^11(x) XOR
     //                  ROTR^25(x)
@@ -139,7 +153,7 @@ class Sha256
                              rotateR( x, 25 );
     }
 
-  static inline Uint32 ShaSSigma0( const Uint32 x )
+  static inline Uint32 shaSSigma0( const Uint32 x )
     {
     // SSIG0(x) = ROTR^7(x) XOR ROTR^18(x) XOR
     //  SHR^3(x)
@@ -150,7 +164,7 @@ class Sha256
                              (x >> 3);
     }
 
-  static inline Uint32 ShaSSigma1( const Uint32 x )
+  static inline Uint32 shaSSigma1( const Uint32 x )
     {
     // SSIG1(x) = ROTR^17(x) XOR ROTR^19(x) XOR
     //  SHR^10(x)
@@ -163,12 +177,13 @@ class Sha256
 
 
 
-// #define SHA_Parity(x, y, z)  ((x) ^ (y) ^ (z))
+  // #define SHA_Parity(x, y, z)  ((x) ^ (y) ^ (z))
 
 
-// Constants defined in FIPS 180-3
+  // Constants defined in FIPS 180-3
 
-static constexpr Uint32 K[64] = {
+  // For SHA 256.
+  static constexpr Uint32 K[64] = {
       0x428a2f98, 0x71374491,
       0xb5c0fbcf, 0xe9b5dba5,
       0x3956c25b,0x59f111f1,
@@ -203,8 +218,11 @@ static constexpr Uint32 K[64] = {
       0xbef9a3f7, 0xc67178f2 };
 
 
-
   public:
+  void init( void );
+  bool processMessageBlock(
+                      const CharBuf& charBuf,
+                      const Int32 where );
 
 
   };
