@@ -9,6 +9,7 @@
 
 #include "Sha256.h"
 #include "../CppBase/StIO.h"
+Base16Numbers.h.
 
 
 
@@ -127,6 +128,15 @@ for( Int32 where = 0; where < max; where += 64 )
     return false;
     }
   }
+
+
+==== Then I need to get the hash value.
+
+Base16Numbers.h.
+
+Then do a toString().
+Need test vectors.
+
 
 StIO::putS( "Finished the block chain." );
 return true;

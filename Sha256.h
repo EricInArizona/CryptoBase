@@ -22,6 +22,9 @@
 // Wikipedia article with a lot of links.
 // https://en.wikipedia.org/wiki/SHA-2
 
+// https://csrc.nist.gov/projects/
+//    cryptographic-algorithm-validation-program
+
 
 #include "../CppBase/BasicTypes.h"
 #include "../CppBase/CharBuf.h"
