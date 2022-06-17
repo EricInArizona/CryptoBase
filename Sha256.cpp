@@ -16,52 +16,77 @@
 // and 1024 bits for SHA-512.
 
 
-void appendPadding( CharBuf& charBuf )
+void Sha256::appendPadding( CharBuf& charBuf )
 {
-const Uint64 originalLength = 
+const Uint64 originalLength =
              Casting::i32ToU64( charBuf.getLast());
+
+// StIO::printF( "originalLength: " );
+// StIO::printFD( Casting::u64ToI32( 
+             // originalLength ));
+// StIO::putS( "" );
+
 
 // To restore it to the original length:
 // CharBuf.truncateLast( Int32 setTo )
 
 // Append that 1 bit.
-charBuf.appendChar( 0, 0x80 );
+charBuf.appendChar( static_cast<char>( 0x80 ),
+                                        1024 );
 
-// Make it an even number of 4-byte integers.
-for( Int32 count = 0; count < 4; count++ )
-  {
-  if( (charBuf.getLast() & 0x3) != 0 )
-    charBuf.appendChar( 0, 1024 );
+Int32 howBig = charBuf.getLast() % 64;
 
-  }
+// StIO::printF( "howBig: " );
+// StIO::printFD( howBig );
+// StIO::putS( "" );
 
-padding:
-a 1 followed by all zeros followed by a 64-bit
-or 128-bit integer are appended to the end of
-the message to produce a padded
-message of length 512*n or 1024*n.
-The appended integer is the length of the
-original message in bits."
 
-0x8000 0000
-// Add the 1 bit at the end.
+Int32 toAdd = 64 - howBig;
 
-For SHA 256 pad to 64 bytes for 512 bits.
-For SHA 512 pad to 128 bytes for 1024 bits.
+// You have to add the least number of zeros
+// possible in order to make it zero mod
+// 64 bytes.
+// It already has seven zero bits after that
+// 1 bit.
 
-Big endian.
-For SHA 256 8 of those bytes are for the length
-at the end.
-For SHA 512 it's a 128 bit length value.
+if( toAdd == 64 )
+  toAdd = 0;
+
+// StIO::printF( "toAdd at top: " );
+// StIO::printFD( toAdd );
+// StIO::putS( "" );
+
+// For SHA 512 it's a 128 bit length value.
 // So 16 bytes.
 
-// The padding is for the number of _bits_ not
-// bytes.
+// 8 bytes for length.
+toAdd -= 8;
+if( toAdd < 0 )
+  toAdd += 64;
+
+// StIO::printF( "toAdd: " );
+// StIO::printFD( toAdd );
+// StIO::putS( "" );
+
+for( Int32 count = 0; count < toAdd; count++ )
+  charBuf.appendChar( 0, 1024 );
+
+Uint64 lengthInBits = originalLength * 8;
+charBuf.appendUint64( lengthInBits,
+                      1024 );
+
+Int32 finalSize = charBuf.getLast();
+
+// StIO::printF( "finalSize mod: " );
+// StIO::printFD( finalSize % 64 );
+// StIO::putS( "" );
+
+if( (finalSize % 64) != 0 )
+  throw "SHA padding finalSize is not right.";
+
 // Maximum message size is 2^64 bits.
-
-
-
 }
+
 
 
 void Sha256::init( void )
@@ -89,6 +114,25 @@ intermediateHash.setVal( 7, 0x5be0cd19 );
 
 // Process one char array of 64 bytes.
 // That's 512 bits.
+bool Sha256::processAllBlocks(
+                         const CharBuf& charBuf )
+{
+Int32 max = charBuf.getLast();
+for( Int32 where = 0; where < max; where += 64 )
+  {
+  if( !Sha256::processMessageBlock(
+                             charBuf, where ))
+    {
+    StIO::putS( "processMessageBlock false." );
+    return false;
+    }
+  }
+
+StIO::putS( "Finished the block chain." );
+return true;
+}
+
+
 
 bool Sha256::processMessageBlock(
                   const CharBuf& charBuf,
@@ -189,3 +233,5 @@ intermediateHash.setVal( 7, tempHash );
 
 return true;
 }
+
+

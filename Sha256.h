@@ -24,7 +24,6 @@
 
 
 #include "../CppBase/BasicTypes.h"
-// #include "../CppBase/CharArray.h"
 #include "../CppBase/CharBuf.h"
 #include "../CppBase/Uint32Array.h"
 
@@ -41,7 +40,14 @@ class Sha256
   Uint32Array W;
 
   // Some Intel processors have SHA instructions.
-  // _asm
+  // https://www.intel.com/content/www/us/en/
+  //           developer/articles/technical/
+  //           intel-sha-extensions.html
+  // They are Streaming SIMD extensions.
+
+  // inline assembly:
+  // __asm__
+
 
   static inline Uint32 shaAdd( const Uint32 x,
                                const Uint32 y )
@@ -220,9 +226,11 @@ class Sha256
 
   public:
   void init( void );
+  void appendPadding( CharBuf& charBuf );
   bool processMessageBlock(
                       const CharBuf& charBuf,
                       const Int32 where );
 
+  bool processAllBlocks( const CharBuf& charBuf );
 
   };
