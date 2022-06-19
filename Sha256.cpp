@@ -9,7 +9,7 @@
 
 #include "Sha256.h"
 #include "../CppBase/StIO.h"
-Base16Numbers.h.
+#include "../CryptoBase/Base16Number.h"
 
 
 
@@ -23,7 +23,7 @@ const Uint64 originalLength =
              Casting::i32ToU64( charBuf.getLast());
 
 // StIO::printF( "originalLength: " );
-// StIO::printFD( Casting::u64ToI32( 
+// StIO::printFD( Casting::u64ToI32(
              // originalLength ));
 // StIO::putS( "" );
 
@@ -130,12 +130,10 @@ for( Int32 where = 0; where < max; where += 64 )
   }
 
 
-==== Then I need to get the hash value.
-
-Base16Numbers.h.
-
-Then do a toString().
-Need test vectors.
+// Get the hash value.
+// Base16Numbers.h.
+// Then do a toString().
+// Need test vectors.
 
 
 StIO::putS( "Finished the block chain." );
@@ -243,5 +241,3 @@ intermediateHash.setVal( 7, tempHash );
 
 return true;
 }
-
-

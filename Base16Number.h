@@ -19,7 +19,7 @@ class Base16Number
   {
   private:
   static const Int32 digitArraySize =
-                                   (310 * 4) + 2;
+                                   1024 * 32;
   Int32 index = 0;
   Int32* D;
 
@@ -68,11 +68,9 @@ class Base16Number
       case 'D': return 13;
       case 'E': return 14;
       case 'F': return 15;
-
       }
 
     return 126;
-    // return (digit - '0');
     }
 
 
