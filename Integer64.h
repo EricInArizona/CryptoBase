@@ -9,6 +9,7 @@
 
 
 #include "../CppBase/BasicTypes.h"
+#include "../CryptoBase/Integer32.h"
 
 
 class Integer64
@@ -45,19 +46,19 @@ class Integer64
     movePart.copy( baseL );
     baseL.setBase( movePart );
 
-    movePart.shiftR32();
+    movePart.shiftRAll();
     movePart.accumAll( baseH );
     baseH.setBase( movePart );
 
-    movePart.shiftR32();
+    movePart.shiftRAll();
     movePart.accumAll( carryL );
     carryL.setBase( movePart );
 
-    movePart.shiftR32();
+    movePart.shiftRAll();
     movePart.accumAll( carryH );
     carryH.setBase( movePart );
 
-    movePart.shiftR32();
+    movePart.shiftRAll();
     if( !movePart.isZero())
       throw "Overflow in cleanCarrys.";
 
@@ -100,15 +101,15 @@ class Integer64
 
     mid1L.setBase( mid1 );
     mid1H.copy( mid1 );
-    mid1H.shiftR32();
+    mid1H.shiftRAll();
 
     mid2L.setBase( mid2 );
     mid2H.copy( mid2 );
-    mid2H.shiftR32();
+    mid2H.shiftRAll();
 
     baseL.setBase( lowPart );
 
-    lowPart.shiftR32();
+    lowPart.shiftRAll();
     baseH.setBase( lowPart );
     baseH.accumAll( mid1L );
     baseH.accumAll( mid2L );
@@ -117,11 +118,49 @@ class Integer64
     carryL.accumAll( mid1H );
     carryL.accumAll( mid2H );
 
-    highPart.shiftR32();
+    highPart.shiftRAll();
     carryH.setBase( highPart );
 
     cleanCarrys();
     }
 
+
+  inline void shiftRAll( void )
+    {
+    baseL.setBase( carryL );
+    baseH.setBase( carryH );
+    carryL.setZero();
+    carryH.setZero();
+    }
+
+
+  inline void copy( Integer64& in )
+    {
+    baseL.copy( in.baseL );
+    baseH.copy( in.baseH );
+    carryL.copy( in.carryL );
+    carryH.copy( in.carryH );
+    }
+
+  inline void setBase( const Integer64& x )
+    {
+    baseL.copy( x.baseL );
+    baseH.copy( x.baseH );
+    carryL.setZero();
+    carryH.setZero();
+    }
+
+
+  inline void accumAll( const Integer64& x )
+    {
+    // Carry can be non zero here.
+
+    baseL.accumAll( x.baseL );
+    baseH.accumAll( x.baseH );
+    carryL.accumAll( x.carryL );
+    carryH.accumAll( x.carryH );
+
+    cleanCarrys();
+    }
 
   };

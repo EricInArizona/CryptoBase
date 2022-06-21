@@ -10,6 +10,8 @@
 
 
 #include "../CppBase/BasicTypes.h"
+#include "../CppBase/Casting.h"
+#include "../CppBase/CharBuf.h"
 
 
 class Integer32
@@ -17,8 +19,8 @@ class Integer32
   private:
   bool testForCopy = false;
   // bool negative = false;
-  Int64 base = 0;
-  Int64 carry = 0;
+  Uint64 base = 0;
+  Uint64 carry = 0;
 
   public:
   inline Integer32( void )
@@ -69,12 +71,14 @@ class Integer32
     carry = 0;
     }
 
+/*
   inline void clearCarry( void )
     {
     carry = 0;
     }
+*/
 
-  inline void shiftR32( void )
+  inline void shiftRAll( void )
     {
     base = carry;
     carry = 0;
@@ -125,8 +129,12 @@ class Integer32
     carry += x.carry;
     }
 
-  // inline void multS(
-  // inline void addSign(
 
+  inline void appendToCharBuf( CharBuf& charBuf )
+    {
+    charBuf.appendUint32(
+               Casting::u64ToU32( base ), 1024 );
+
+    }
 
   };
