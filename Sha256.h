@@ -22,9 +22,6 @@
 // Wikipedia article with a lot of links.
 // https://en.wikipedia.org/wiki/SHA-2
 
-// https://csrc.nist.gov/projects/
-//    cryptographic-algorithm-validation-program
-
 
 #include "../CppBase/BasicTypes.h"
 #include "../CppBase/CharBuf.h"
@@ -38,6 +35,14 @@
 class Sha256
   {
   private:
+  // bool testForCopy = false;
+  // constructors.
+  //  if( in.testForCopy )
+   //   throw "Sha256 copy constructor.";
+
+  // ===========
+
+
   Uint32Array intermediateHash;
   // W is called the Message Schedule.
   Uint32Array W;
@@ -52,15 +57,20 @@ class Sha256
   // __asm__
 
 
+
   static inline Uint32 shaAdd( const Uint32 x,
                                const Uint32 y )
     {
+    // What are the Intel instructions to add,
+    // like if it ignores the overflow or not.
+
     Uint64 result = x + y;
     // It's mod 2^32.
     return result & 0xFFFFFFFF;
     }
 
-  // // &gt; is: >
+
+  // &gt; is: >
 
   static inline Uint32 rotateR( const Uint32 x,
                          const Uint32 howMuch )
@@ -235,5 +245,6 @@ class Sha256
                       const Int32 where );
 
   bool processAllBlocks( const CharBuf& charBuf );
+  void getHash( CharBuf& charBuf );
 
   };

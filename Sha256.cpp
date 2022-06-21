@@ -141,6 +141,39 @@ return true;
 }
 
 
+// Get the Message Digest as a series of bytes.
+void Sha256::getHash( CharBuf& charBuf )
+{
+// This gets an array of bytes that is the
+// bit string for the hash.
+// The Message Digest is an array of bytes.
+
+Uint32 toSet = intermediateHash.getVal( 0 );
+charBuf.appendUint32( toSet, 1024 );
+
+toSet = intermediateHash.getVal( 1 );
+charBuf.appendUint32( toSet, 1024 );
+
+toSet = intermediateHash.getVal( 2 );
+charBuf.appendUint32( toSet, 1024 );
+
+toSet = intermediateHash.getVal( 3 );
+charBuf.appendUint32( toSet, 1024 );
+
+toSet = intermediateHash.getVal( 4 );
+charBuf.appendUint32( toSet, 1024 );
+
+toSet = intermediateHash.getVal( 5 );
+charBuf.appendUint32( toSet, 1024 );
+
+toSet = intermediateHash.getVal( 6 );
+charBuf.appendUint32( toSet, 1024 );
+
+toSet = intermediateHash.getVal( 7 );
+charBuf.appendUint32( toSet, 1024 );
+}
+
+
 
 bool Sha256::processMessageBlock(
                   const CharBuf& charBuf,

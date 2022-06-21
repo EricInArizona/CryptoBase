@@ -1,6 +1,8 @@
 // Copyright Eric Chauvin 2022.
 
 
+// This was only partially done.
+
 
 // This is licensed under the GNU General
 // Public License (GPL).  It is the
@@ -24,6 +26,7 @@ class Base16Number
   Int32* D;
 
   public:
+  Base16Number( void );
   Base16Number( Str& toSet );
   Base16Number( const Base16Number& obj );
   ~Base16Number( void );
@@ -40,7 +43,8 @@ class Base16Number
     return index;
     }
 
-  inline Int32 convertDigit( const Int32 digit )
+  static inline Int32 convertDigit(
+                             const Int32 digit )
     {
     switch( digit )
       {
@@ -73,7 +77,41 @@ class Base16Number
     return 126;
     }
 
+  static inline bool isDigit( const Int32 digit )
+    {
+    switch( digit )
+      {
+      case '0': return true;
+      case '1': return true;
+      case '2': return true;
+      case '3': return true;
+      case '4': return true;
+      case '5': return true;
+      case '6': return true;
+      case '7': return true;
+      case '8': return true;
+      case '9': return true;
+
+      case 'a': return true;
+      case 'b': return true;
+      case 'c': return true;
+      case 'd': return true;
+      case 'e': return true;
+      case 'f': return true;
+
+      case 'A': return true;
+      case 'B': return true;
+      case 'C': return true;
+      case 'D': return true;
+      case 'E': return true;
+      case 'F': return true;
+      }
+
+    return false;
+    }
+
 
   void setFromStr( const Str& toSet );
+  void setFromBytes( const CharBuf& charBuf );
 
   };

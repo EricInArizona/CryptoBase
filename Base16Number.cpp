@@ -12,6 +12,13 @@
 #include "Base16Number.h"
 
 
+Base16Number::Base16Number( void )
+{
+D = new Int32[digitArraySize];
+index = 0;
+D[0] = 0;
+}
+
 
 Base16Number::Base16Number( Str& toSet )
 {
@@ -53,12 +60,13 @@ Int32 where = 0;
 for( Int32 count = last - 1; count >= 0; count-- )
   {
   if( where >= digitArraySize )
-    throw "Base10Number: Too big for array.";
+    throw "Base16Number: Too big for array.";
 
   Int32 c = toSet.getC( count );
 
   // Ignore white space, commas, non digits.
-  // if ...
+  if( !isDigit( c ))
+    continue;
 
   Int32 digit = convertDigit( c );
 
@@ -74,3 +82,43 @@ if( where == 0 )
 
 index = where - 1;
 }
+
+
+
+void Base16Number::setFromBytes( 
+                          const CharBuf& charBuf )
+{
+index = 0;
+D[0] = 0;
+
+const Int32 last = charBuf.getLast();
+if( last < 1 )
+  return;
+
+Int32 where = 0;
+// Start at the right most byte.
+// It is setting it to little endian.
+for( Int32 count = last - 1; count >= 0; count-- )
+  {
+  if( where >= digitArraySize )
+    throw "Base16Number: Too big for array.";
+
+  Int32 c = charBuf.getC( count );
+  
+
+  D[where] = c & 0xF;
+  where++;
+  D[where] = (c >> 4) & 0xF;
+  where++;
+  }
+
+if( where == 0 )
+  {
+  // No valid digit was ever set.
+  throw "Base16Number: no valid digits.";
+  }
+
+index = where - 1;
+}
+
+
