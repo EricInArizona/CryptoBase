@@ -18,9 +18,38 @@
 
 // FIPS 180-2
 
-
 // Wikipedia article with a lot of links.
 // https://en.wikipedia.org/wiki/SHA-2
+
+// Test Vectors:
+// For "abc"
+// SHA-256
+// ba7816bf 8f01cfea 414140de 5dae2223 b00361a3
+   //             96177a9c b410ff61 f20015ad
+
+// For the empty string.
+// Length 0.
+// If you test with an empty string then you are
+// appending a 1 bit, and a length of zero.
+// That is the 64 bytes.
+
+// SHA-256
+// e3b0c442 98fc1c14 9afbf4c8 996fb924
+// 27ae41e4 649b934c a495991b 7852b855
+
+// Input message:
+// "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnl
+//      mnomnopnopq"
+// (length 448 bits).
+
+// SHA-256
+// 248d6a61 d20638b8 e5c02693 0c3e6039
+// a33ce459 64ff2167 f6ecedd4 19db06c1
+
+// A linux test:
+// echo -n "abc" | sha256sum
+// ba7816bf...
+
 
 
 #include "../CppBase/BasicTypes.h"
@@ -32,17 +61,11 @@
 // SHA 512 works on 64 bit words.
 
 
+
 class Sha256
   {
   private:
-  // bool testForCopy = false;
-  // constructors.
-  //  if( in.testForCopy )
-   //   throw "Sha256 copy constructor.";
-
-  // ===========
-
-
+  bool testForCopy = false;
   Uint32Array intermediateHash;
   // W is called the Message Schedule.
   Uint32Array W;
@@ -51,29 +74,46 @@ class Sha256
   // https://www.intel.com/content/www/us/en/
   //           developer/articles/technical/
   //           intel-sha-extensions.html
-  // They are Streaming SIMD extensions.
+  // They are SIMD extensions.
 
-  // inline assembly:
   // __asm__
 
 
+  void init( void );
+  void appendPadding( CharBuf& charBuf );
 
+  /* A test for adding.
   static inline Uint32 shaAdd( const Uint32 x,
                                const Uint32 y )
     {
-    // What are the Intel instructions to add,
-    // like if it ignores the overflow or not.
+    The C11 standard says that wrapping mod
+    2^32 is the normal behavior.
+    Uint32 test = x + y;
+    // The add instruction would set a carry flag,
+    // but have no overflow exception.
+    // So you don't know if there is an overflow
+    // unless you check for it.
+    // See Signals.cpp
+    // For signed integers you get
+    // Erroneous arithmetic operation.
+    // SIGFPE
 
     Uint64 result = x + y;
+    result = result & 0xFFFFFFFF;
     // It's mod 2^32.
+    if( result != test )
+      throw "This exception never happens.";
+
+    // Casting it to 32 bit.
     return result & 0xFFFFFFFF;
     }
+  */
 
 
-  // &gt; is: >
+  // &gt; tag is: >
 
   static inline Uint32 rotateR( const Uint32 x,
-                         const Uint32 howMuch )
+                         const Int32 howMuch )
     {
     // Like rotating around in a circle.
     // ROTR^n(x) = (x >> n) OR (x <<(w-n))
@@ -84,42 +124,11 @@ class Sha256
 
 
   static inline Uint32 rotateL( const Uint32 x,
-                           const Uint32 howMuch )
+                           const Int32 howMuch )
     {
     return (x << howMuch) |
            (x >> (32 - howMuch));
     }
-
-  // The six functions for SHA 256:
-  // CH( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
-  // MAJ( x, y, z) = (x AND y) XOR (x AND z) XOR
-  //               (y AND z)
-  // BSIG0(x) = ROTR^2(x) XOR ROTR^13(x) XOR
-  //                  ROTR^22(x)
-  // BSIG1(x) = ROTR^6(x) XOR ROTR^11(x) XOR
-  //                        ROTR^25(x)
-  // SSIG0(x) = ROTR^7(x) XOR ROTR^18(x) XOR
-  //                                  SHR^3(x)
-  // SSIG1(x) = ROTR^17(x) XOR ROTR^19(x) XOR
-  //                                 SHR^10(x)
-
-  // The 6 functions for SHA 512.
-  // These are for 64 bit words.
-  // Some rotate numbers are higher because it
-  // has 64 bits to work with.
-  // CH( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
-  // MAJ( x, y, z) = (x AND y) XOR (x AND z) XOR
-  //               (y AND z)
-  // BSIG0(x) = ROTR^28(x) XOR ROTR^34(x) XOR
-  //         ROTR^39(x)
-  // BSIG1(x) = ROTR^14(x) XOR ROTR^18(x) XOR
-  //                   ROTR^41(x)
-  // SSIG0(x) = ROTR^1(x) XOR ROTR^8(x) XOR
-  //                SHR^7(x)
-  // SSIG1(x) = ROTR^19(x) XOR ROTR^61(x) XOR
-  //              SHR^6(x)
-
-
 
 
   static inline Uint32 shaCh( const Uint32 x,
@@ -143,7 +152,7 @@ class Sha256
   // SHA 512.
 
   // Notice how they did upper and lower case
-  // names for the sigma define statements.
+  // names for the sigma #define statements.
   // That comes from the greek sigma symbol,
   // and there is a capital greek sigma and a
   // lower case sigma.
@@ -199,9 +208,8 @@ class Sha256
   // #define SHA_Parity(x, y, z)  ((x) ^ (y) ^ (z))
 
 
-  // Constants defined in FIPS 180-3
-
   // For SHA 256.
+
   static constexpr Uint32 K[64] = {
       0x428a2f98, 0x71374491,
       0xb5c0fbcf, 0xe9b5dba5,
@@ -238,13 +246,28 @@ class Sha256
 
 
   public:
-  void init( void );
-  void appendPadding( CharBuf& charBuf );
+  inline Sha256( void )
+    {
+    }
+
+  inline Sha256( const Sha256& in )
+    {
+    if( in.testForCopy )
+      return;
+
+    throw "Sha256 copy constructor.";
+    }
+
+  inline ~Sha256( void )
+    {
+    }
+
   bool processMessageBlock(
-                      const CharBuf& charBuf,
+                      CharBuf& charBuf,
                       const Int32 where );
 
-  bool processAllBlocks( const CharBuf& charBuf );
+  bool processAllBlocks( CharBuf& charBuf );
   void getHash( CharBuf& charBuf );
+  void showHash( void );
 
   };

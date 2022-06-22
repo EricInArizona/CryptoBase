@@ -39,6 +39,22 @@ class Integer64
     }
 
 
+
+  inline void setZero( void )
+    {
+    baseL.setZero();
+    baseH.setZero();
+    }
+
+  inline bool isZero( void ) const
+    {
+    if( baseL.isZero() && baseH.isZero() )
+      return true;
+
+    return false;
+    }
+
+
   inline void cleanCarrys( void )
     {
     Integer32 movePart;
@@ -94,7 +110,12 @@ class Integer64
     Integer32 mid2L;
     Integer32 mid2H;
 
-    lowPart.mult( x.baseL, y.baseL );
+    if( x.baseL.isZero() || y.baseL.isZero())
+      lowPart.setZero();
+    else
+      lowPart.mult( x.baseL, y.baseL );
+
+// ======
     mid1.mult( x.baseH, y.baseL );
     mid2.mult( x.baseL, y.baseH );
     highPart.mult( x.baseH, y.baseH );

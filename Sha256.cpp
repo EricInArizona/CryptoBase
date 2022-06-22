@@ -9,7 +9,8 @@
 
 #include "Sha256.h"
 #include "../CppBase/StIO.h"
-#include "../CryptoBase/Base16Number.h"
+#include "../CppBase/ByteHex.h"
+// #include "../CryptoBase/Base16Number.h"
 
 
 
@@ -17,29 +18,36 @@
 // and 1024 bits for SHA-512.
 
 
+
 void Sha256::appendPadding( CharBuf& charBuf )
 {
 const Uint64 originalLength =
              Casting::i32ToU64( charBuf.getLast());
 
-// StIO::printF( "originalLength: " );
-// StIO::printFD( Casting::u64ToI32(
-             // originalLength ));
-// StIO::putS( "" );
+StIO::printF( "originalLength: " );
+StIO::printFD( Casting::u64ToI32(
+              originalLength ));
+StIO::putS( "" );
 
 
 // To restore it to the original length:
 // CharBuf.truncateLast( Int32 setTo )
 
+// Test it with a wrong value.
+// charBuf.appendChar( 'a', 1024 );
+
 // Append that 1 bit.
-charBuf.appendChar( static_cast<char>( 0x80 ),
+charBuf.appendChar( Casting::i32ToByte( 128 ),
                                         1024 );
+// char test = charBuf.getC( 0 );
+// if( (test & 0xFF) == 0x80 )
+  // throw "Got that bit.";
 
 Int32 howBig = charBuf.getLast() % 64;
 
-// StIO::printF( "howBig: " );
-// StIO::printFD( howBig );
-// StIO::putS( "" );
+StIO::printF( "howBig: " );
+StIO::printFD( howBig );
+StIO::putS( "" );
 
 
 Int32 toAdd = 64 - howBig;
@@ -50,12 +58,12 @@ Int32 toAdd = 64 - howBig;
 // It already has seven zero bits after that
 // 1 bit.
 
-if( toAdd == 64 )
-  toAdd = 0;
+// if( toAdd == 64 )
+  // toAdd = 0;
 
-// StIO::printF( "toAdd at top: " );
-// StIO::printFD( toAdd );
-// StIO::putS( "" );
+StIO::printF( "toAdd at top: " );
+StIO::printFD( toAdd );
+StIO::putS( "" );
 
 // For SHA 512 it's a 128 bit length value.
 // So 16 bytes.
@@ -65,9 +73,13 @@ toAdd -= 8;
 if( toAdd < 0 )
   toAdd += 64;
 
-// StIO::printF( "toAdd: " );
-// StIO::printFD( toAdd );
-// StIO::putS( "" );
+StIO::printF( "toAdd: " );
+StIO::printFD( toAdd );
+StIO::putS( "" );
+
+// The spec says this has to be the smallest 
+// number of zeros to make it come to 64 bytes.
+// 512 bits.
 
 for( Int32 count = 0; count < toAdd; count++ )
   charBuf.appendChar( 0, 1024 );
@@ -78,12 +90,25 @@ charBuf.appendUint64( lengthInBits,
 
 Int32 finalSize = charBuf.getLast();
 
-// StIO::printF( "finalSize mod: " );
-// StIO::printFD( finalSize % 64 );
-// StIO::putS( "" );
+StIO::printF( "finalSize: " );
+StIO::printFD( finalSize );
+StIO::putS( "" );
+
+StIO::printF( "finalSize mod: " );
+StIO::printFD( finalSize % 64 );
+StIO::putS( "" );
 
 if( (finalSize % 64) != 0 )
   throw "SHA padding finalSize is not right.";
+
+// For the zero length test string.
+// for( Int32 count = 1; count < 64; count++ )
+  // {
+  // char test = charBuf.getC( count );
+  // if( test != 0 )
+    // throw "That is not a zero.";
+
+  // }
 
 // Maximum message size is 2^64 bits.
 }
@@ -100,7 +125,7 @@ intermediateHash.setSize( 8 );
 // block, but after the first block they are
 // using the intermediate values from the
 // previous block.  A block chain.
-// Blocks chained together.
+
 
 intermediateHash.setVal( 0, 0x6a09e667 );
 intermediateHash.setVal( 1, 0xbb67ae85 );
@@ -110,17 +135,24 @@ intermediateHash.setVal( 4, 0x510e527f );
 intermediateHash.setVal( 5, 0x9b05688c );
 intermediateHash.setVal( 6, 0x1f83d9ab );
 intermediateHash.setVal( 7, 0x5be0cd19 );
+
+StIO::putS( "Hash at start:" );
+showHash();
 }
 
 
-// Process one char array of 64 bytes.
-// That's 512 bits.
-bool Sha256::processAllBlocks(
-                         const CharBuf& charBuf )
+bool Sha256::processAllBlocks( CharBuf& charBuf )
 {
+appendPadding( charBuf );
+init();
+
 Int32 max = charBuf.getLast();
+if( (max % 64) != 0 )
+  throw "processAllBlocks (max % 64) != 0";
+
 for( Int32 where = 0; where < max; where += 64 )
   {
+  StIO::putS( "Processing message block." );
   if( !Sha256::processMessageBlock(
                              charBuf, where ))
     {
@@ -130,24 +162,39 @@ for( Int32 where = 0; where < max; where += 64 )
   }
 
 
-// Get the hash value.
-// Base16Numbers.h.
-// Then do a toString().
-// Need test vectors.
-
+StIO::putS( "Hash at end:" );
+showHash();
 
 StIO::putS( "Finished the block chain." );
 return true;
 }
 
 
+
+void Sha256::showHash( void )
+{
+CharBuf hashBuf;
+getHash( hashBuf );
+
+const Int32 maxBytes = hashBuf.getLast();
+for( Int32 count = 0; count < maxBytes; count++ )
+  {
+  char oneByte = hashBuf.getC( count );
+  char leftC = ByteHex::getLeftChar( oneByte );
+  StIO::putChar( leftC );
+  char rightC = ByteHex::getRightChar( oneByte );
+  StIO::putChar( rightC );
+  StIO::putChar( ' ' );
+  }
+
+StIO::putChar( '\n' );
+}
+
+
+
 // Get the Message Digest as a series of bytes.
 void Sha256::getHash( CharBuf& charBuf )
 {
-// This gets an array of bytes that is the
-// bit string for the hash.
-// The Message Digest is an array of bytes.
-
 Uint32 toSet = intermediateHash.getVal( 0 );
 charBuf.appendUint32( toSet, 1024 );
 
@@ -176,7 +223,7 @@ charBuf.appendUint32( toSet, 1024 );
 
 
 bool Sha256::processMessageBlock(
-                  const CharBuf& charBuf,
+                  CharBuf& charBuf,
                   const Int32 where )
 {
 const Int32 last = charBuf.getLast();
@@ -203,10 +250,8 @@ for( Int32 count = 16; count < 64; count++ )
                                      count - 15 ));
   Uint32 toSet4 = W.getVal( count - 16 );
 
-  // shaAdd is commutative.
-  Uint32 toSet = shaAdd( toSet1, toSet2 );
-  toSet = shaAdd( toSet, toSet3 );
-  toSet = shaAdd( toSet, toSet4 );
+  Uint32 toSet = toSet1 + toSet2 + toSet3 +
+                                   toSet4;
 
   W.setVal( count, toSet );
   }
@@ -223,53 +268,44 @@ Uint32 H = intermediateHash.getVal( 7 );
 
 for( Int32 t = 0; t < 64; t++ )
   {
-  Uint32 temp1 = shaAdd( H, shaBSigma1( E ));
-  temp1 = shaAdd( temp1, shaCh( E, F, G ));
-  temp1 = shaAdd( temp1, K[t] );
-  temp1 = shaAdd( temp1, W.getVal( t ));
+  Uint32 temp1 = H + shaBSigma1( E ) +
+         shaCh( E, F, G ) + K[t] +
+         W.getVal( t );
 
-  Uint32 temp2 = shaAdd( shaBSigma0( A ),
-                            shaMaj( A, B, C));
+  Uint32 temp2 = shaBSigma0( A ) +
+                            shaMaj( A, B, C );
   H = G;
   G = F;
   F = E;
-  E = shaAdd( D, temp1 );
+  E = D + temp1;
   D = C;
   C = B;
   B = A;
-  A = shaAdd( temp1, temp2 );
+  A = temp1 + temp2;
   }
 
-Uint32 tempHash = shaAdd(
-              intermediateHash.getVal( 0 ), A );
+Uint32 tempHash = intermediateHash.getVal( 0 ) + A;
 intermediateHash.setVal( 0, tempHash );
 
-tempHash = shaAdd(
-              intermediateHash.getVal( 1 ), B );
+tempHash = intermediateHash.getVal( 1 ) + B;
 intermediateHash.setVal( 1, tempHash );
 
-tempHash = shaAdd(
-              intermediateHash.getVal( 2 ), C );
+tempHash = intermediateHash.getVal( 2 ) + C;
 intermediateHash.setVal( 2, tempHash );
 
-tempHash = shaAdd(
-              intermediateHash.getVal( 3 ), D );
+tempHash = intermediateHash.getVal( 3 ) + D;
 intermediateHash.setVal( 3, tempHash );
 
-tempHash = shaAdd(
-              intermediateHash.getVal( 4 ), E );
+tempHash = intermediateHash.getVal( 4 ) + E;
 intermediateHash.setVal( 4, tempHash );
 
-tempHash = shaAdd(
-              intermediateHash.getVal( 5 ), F );
+tempHash = intermediateHash.getVal( 5 ) + F;
 intermediateHash.setVal( 5, tempHash );
 
-tempHash = shaAdd(
-              intermediateHash.getVal( 6 ), G );
+tempHash = intermediateHash.getVal( 6 ) + G;
 intermediateHash.setVal( 6, tempHash );
 
-tempHash = shaAdd(
-              intermediateHash.getVal( 7 ), H );
+tempHash = intermediateHash.getVal( 7 ) + H;
 intermediateHash.setVal( 7, tempHash );
 
 return true;

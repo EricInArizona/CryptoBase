@@ -47,7 +47,7 @@ class Integer32
 
   inline bool isZero( void ) const
     {
-    if( (base == 0) && (carry == 0))
+    if( base == 0 )
       return true;
 
     return false;
