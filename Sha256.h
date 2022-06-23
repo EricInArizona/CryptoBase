@@ -21,44 +21,10 @@
 // Wikipedia article with a lot of links.
 // https://en.wikipedia.org/wiki/SHA-2
 
-// Test Vectors:
-// For "abc"
-// SHA-256
-// ba7816bf 8f01cfea 414140de 5dae2223 b00361a3
-   //             96177a9c b410ff61 f20015ad
-
-// For the empty string.
-// Length 0.
-// If you test with an empty string then you are
-// appending a 1 bit, and a length of zero.
-// That is the 64 bytes.
-
-// SHA-256
-// e3b0c442 98fc1c14 9afbf4c8 996fb924
-// 27ae41e4 649b934c a495991b 7852b855
-
-// Input message:
-// "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnl
-//      mnomnopnopq"
-// (length 448 bits).
-
-// SHA-256
-// 248d6a61 d20638b8 e5c02693 0c3e6039
-// a33ce459 64ff2167 f6ecedd4 19db06c1
-
-// A linux test:
-// echo -n "abc" | sha256sum
-// ba7816bf...
-
-
 
 #include "../CppBase/BasicTypes.h"
 #include "../CppBase/CharBuf.h"
 #include "../CppBase/Uint32Array.h"
-
-
-// SHA 256 works on 32 bit words.
-// SHA 512 works on 64 bit words.
 
 
 
@@ -70,52 +36,24 @@ class Sha256
   // W is called the Message Schedule.
   Uint32Array W;
 
-  // Some Intel processors have SHA instructions.
-  // https://www.intel.com/content/www/us/en/
-  //           developer/articles/technical/
-  //           intel-sha-extensions.html
-  // They are SIMD extensions.
-
-  // __asm__
-
-
   void init( void );
   void appendPadding( CharBuf& charBuf );
 
-  /* A test for adding.
-  static inline Uint32 shaAdd( const Uint32 x,
-                               const Uint32 y )
-    {
-    The C11 standard says that wrapping mod
-    2^32 is the normal behavior.
-    Uint32 test = x + y;
-    // The add instruction would set a carry flag,
-    // but have no overflow exception.
-    // So you don't know if there is an overflow
-    // unless you check for it.
-    // See Signals.cpp
-    // For signed integers you get
-    // Erroneous arithmetic operation.
-    // SIGFPE
-
-    Uint64 result = x + y;
-    result = result & 0xFFFFFFFF;
-    // It's mod 2^32.
-    if( result != test )
-      throw "This exception never happens.";
-
-    // Casting it to 32 bit.
-    return result & 0xFFFFFFFF;
-    }
-  */
+  // The C11 standard says that wrapping
+  // unsigned integers is the normal behavior.
+  // I think C++ works that way.
+  // It's mod 2^32.
 
 
-  // &gt; tag is: >
+  // From the RFC:
+
+  // #define SHA256_ROTR(bits,word)                         \
+  //             (((word) >> (bits)) |
+  //             ((word) << (32-(bits))))
 
   static inline Uint32 rotateR( const Uint32 x,
                          const Int32 howMuch )
     {
-    // Like rotating around in a circle.
     // ROTR^n(x) = (x >> n) OR (x <<(w-n))
 
     return (x >> howMuch) |
@@ -123,12 +61,23 @@ class Sha256
     }
 
 
+  // #define SHA256_ROTL(bits,word)                         \
+  //        (((word) << (bits)) |
+  //      ((word) >> (32-(bits))))
+
   static inline Uint32 rotateL( const Uint32 x,
                            const Int32 howMuch )
     {
     return (x << howMuch) |
            (x >> (32 - howMuch));
     }
+
+  // "equivalent and potentially faster."
+  // ... on some systems.
+  // #define SHA_Ch(x, y, z)
+  //        (((x) & ((y) ^ (z))) ^ (z))
+  // #define SHA_Maj(x, y, z)
+  //     (((x) & ((y) | (z))) | ((y) & (z)))
 
 
   static inline Uint32 shaCh( const Uint32 x,
@@ -148,9 +97,6 @@ class Sha256
     return (x & y) ^ (x & z) ^ (y & z);
     }
 
-  // These sigma functions are different for
-  // SHA 512.
-
   // Notice how they did upper and lower case
   // names for the sigma #define statements.
   // That comes from the greek sigma symbol,
@@ -165,6 +111,9 @@ class Sha256
     //               XOR ROTR^22(x)
 
     // #define SHA256_SIGMA0(word)
+    //    (SHA256_ROTR( 2,word) ^
+    //    SHA256_ROTR(13,word) ^
+    //    SHA256_ROTR(22,word))
 
     return rotateR( x, 2 ) ^ rotateR( x, 13 ) ^
                              rotateR( x, 22 );
@@ -176,6 +125,9 @@ class Sha256
     //                  ROTR^25(x)
 
     // #define SHA256_SIGMA1(word)
+    //     (SHA256_ROTR( 6,word) ^
+    //     SHA256_ROTR(11,word) ^
+    //     SHA256_ROTR(25,word))
 
     return rotateR( x, 6 ) ^ rotateR( x, 11 ) ^
                              rotateR( x, 25 );
@@ -187,6 +139,9 @@ class Sha256
     //  SHR^3(x)
 
     // #define SHA256_sigma0(word)
+    //      (SHA256_ROTR( 7,word) ^
+    //       SHA256_ROTR(18,word) ^
+    //       SHA256_SHR( 3,word))
 
     return rotateR( x, 7 ) ^ rotateR( x, 18 ) ^
                              (x >> 3);
@@ -198,6 +153,9 @@ class Sha256
     //  SHR^10(x)
 
     // #define SHA256_sigma1(word)
+    //     (SHA256_ROTR(17,word) ^
+    //      SHA256_ROTR(19,word) ^
+    //      SHA256_SHR(10,word))
 
     return rotateR( x, 17 ) ^ rotateR( x, 19 ) ^
                              (x >> 10);
@@ -213,7 +171,7 @@ class Sha256
   static constexpr Uint32 K[64] = {
       0x428a2f98, 0x71374491,
       0xb5c0fbcf, 0xe9b5dba5,
-      0x3956c25b,0x59f111f1,
+      0x3956c25b, 0x59f111f1,
       0x923f82a4, 0xab1c5ed5,
       0xd807aa98, 0x12835b01,
       0x243185be, 0x550c7dc3,
@@ -243,6 +201,7 @@ class Sha256
       0x84c87814, 0x8cc70208,
       0x90befffa, 0xa4506ceb,
       0xbef9a3f7, 0xc67178f2 };
+
 
 
   public:

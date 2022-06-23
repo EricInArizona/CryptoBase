@@ -14,8 +14,46 @@
 
 
 
-// Block size is 512 bits for SHA-256
-// and 1024 bits for SHA-512.
+  // Some Intel processors have SHA instructions.
+  // https://www.intel.com/content/www/us/en/
+  //           developer/articles/technical/
+  //           intel-sha-extensions.html
+  // They are SIMD extensions.
+
+  // __asm__
+
+
+
+// Test Vectors:
+// For "abc"
+// SHA-256
+// ba7816bf 8f01cfea 414140de 5dae2223 b00361a3
+   //             96177a9c b410ff61 f20015ad
+
+// For the empty string.
+// Length 0.
+// If you test with an empty string then you are
+// appending a 1 bit, and a length of zero.
+// That is the 64 bytes.
+
+// SHA-256
+// e3b0c442 98fc1c14 9afbf4c8 996fb924
+// 27ae41e4 649b934c a495991b 7852b855
+
+// Input message:
+// "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnl
+//      mnomnopnopq"
+// (length 448 bits).
+
+// SHA-256
+// 248d6a61 d20638b8 e5c02693 0c3e6039
+// a33ce459 64ff2167 f6ecedd4 19db06c1
+
+// A linux test:
+// echo -n "abc" | sha256sum
+// ba7816bf...
+
+
 
 
 
@@ -32,9 +70,6 @@ StIO::putS( "" );
 
 // To restore it to the original length:
 // CharBuf.truncateLast( Int32 setTo )
-
-// Test it with a wrong value.
-// charBuf.appendChar( 'a', 1024 );
 
 // Append that 1 bit.
 charBuf.appendChar( Casting::i32ToByte( 128 ),
@@ -77,16 +112,31 @@ StIO::printF( "toAdd: " );
 StIO::printFD( toAdd );
 StIO::putS( "" );
 
-// The spec says this has to be the smallest 
+// The spec says this has to be the smallest
 // number of zeros to make it come to 64 bytes.
 // 512 bits.
 
 for( Int32 count = 0; count < toAdd; count++ )
   charBuf.appendChar( 0, 1024 );
 
+// It already has seven zero bits after that
+// 1 bit.  Those aren't part of the message 
+// length.
+
+// A message of zero length makes this zero.
+// "The appended integer is the length of the
+// original message."
+// "abc" is length 3.
+// "The padded message is then processed"
+// The hash is done on the padding too.
+
+
+
 Uint64 lengthInBits = originalLength * 8;
 charBuf.appendUint64( lengthInBits,
                       1024 );
+
+====
 
 Int32 finalSize = charBuf.getLast();
 
@@ -124,17 +174,24 @@ intermediateHash.setSize( 8 );
 // This is how they get set before the first
 // block, but after the first block they are
 // using the intermediate values from the
-// previous block.  A block chain.
+// previous block.  A chain of blocks.
+// A block chain.
 
+// Initial Hash Values: FIPS 180-3
+// static uint32_t SHA256_H0[SHA256HashSize/4] =
+//  {
+//  0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A,
+//  0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19
+// };
 
-intermediateHash.setVal( 0, 0x6a09e667 );
-intermediateHash.setVal( 1, 0xbb67ae85 );
-intermediateHash.setVal( 2, 0x3c6ef372 );
-intermediateHash.setVal( 3, 0xa54ff53a );
-intermediateHash.setVal( 4, 0x510e527f );
-intermediateHash.setVal( 5, 0x9b05688c );
-intermediateHash.setVal( 6, 0x1f83d9ab );
-intermediateHash.setVal( 7, 0x5be0cd19 );
+intermediateHash.setVal( 0, 0x6A09E667 );
+intermediateHash.setVal( 1, 0xBB67AE85 );
+intermediateHash.setVal( 2, 0x3C6EF372 );
+intermediateHash.setVal( 3, 0xA54FF53A );
+intermediateHash.setVal( 4, 0x510E527F );
+intermediateHash.setVal( 5, 0x9B05688C );
+intermediateHash.setVal( 6, 0x1F83D9AB );
+intermediateHash.setVal( 7, 0x5BE0CD19 );
 
 StIO::putS( "Hash at start:" );
 showHash();
@@ -195,29 +252,22 @@ StIO::putChar( '\n' );
 // Get the Message Digest as a series of bytes.
 void Sha256::getHash( CharBuf& charBuf )
 {
-Uint32 toSet = intermediateHash.getVal( 0 );
-charBuf.appendUint32( toSet, 1024 );
+// From the RFC code:
+//  for (i = 0; i &lt; HashSize; ++i)
+//    Message_Digest[i] = (uint8_t)
+//      Intermediate_Hash[
+// i >> 2] // divide by 4.
+// Shift the bits to make it big endian.
+// >> 8 * ( 3 - ( i & 0x03 ) ));
+// i mod 4 goes from zero to 3.
 
-toSet = intermediateHash.getVal( 1 );
-charBuf.appendUint32( toSet, 1024 );
+// The meaning of the word concatinate.
 
-toSet = intermediateHash.getVal( 2 );
-charBuf.appendUint32( toSet, 1024 );
-
-toSet = intermediateHash.getVal( 3 );
-charBuf.appendUint32( toSet, 1024 );
-
-toSet = intermediateHash.getVal( 4 );
-charBuf.appendUint32( toSet, 1024 );
-
-toSet = intermediateHash.getVal( 5 );
-charBuf.appendUint32( toSet, 1024 );
-
-toSet = intermediateHash.getVal( 6 );
-charBuf.appendUint32( toSet, 1024 );
-
-toSet = intermediateHash.getVal( 7 );
-charBuf.appendUint32( toSet, 1024 );
+for( Int32 count = 0; count < 8; count++ )
+  {
+  Uint32 toSet = intermediateHash.getVal( count );
+  charBuf.appendUint32( toSet, 1024 );
+  }
 }
 
 
@@ -241,8 +291,10 @@ for( Int32 count = 0; count < 16; count++ )
 
 for( Int32 count = 16; count < 64; count++ )
   {
-  // Wt = SSIG1(W(t-2)) + W(t-7) +
-  //         SSIG0(w(t-15)) + W(t-16)
+  // Wt = SSIG1( W(t-2)) + W(t-7) +
+  //         SSIG0( w(t-15)) + W( t-16)
+  // W[t] = SHA256_sigma1(W[t-2]) + W[t-7] +
+  //      SHA256_sigma0(W[t-15]) + W[t-16];
 
   Uint32 toSet1 = shaSSigma1( W.getVal( count - 2 ));
   Uint32 toSet2 = W.getVal( count - 7 );
@@ -265,48 +317,69 @@ Uint32 F = intermediateHash.getVal( 5 );
 Uint32 G = intermediateHash.getVal( 6 );
 Uint32 H = intermediateHash.getVal( 7 );
 
-
 for( Int32 t = 0; t < 64; t++ )
   {
+  // T1 = h + BSIG1(e) + CH(e,f,g) + Kt + Wt
+  // temp1 = H + SHA256_SIGMA1(E) +
+  //       SHA_Ch(E,F,G) + K[t] + W[t];
+
   Uint32 temp1 = H + shaBSigma1( E ) +
          shaCh( E, F, G ) + K[t] +
          W.getVal( t );
 
+
+  // T2 = BSIG0(a) + MAJ(a,b,c)
+  // temp2 = SHA256_SIGMA0(A) + SHA_Maj(A,B,C);
+
   Uint32 temp2 = shaBSigma0( A ) +
                             shaMaj( A, B, C );
+
+  // h = g
+  // g = f
+  // f = e
+  // e = d + T1
+
   H = G;
   G = F;
   F = E;
   E = D + temp1;
+
+  // d = c
+  // c = b
+  // b = a
+  // a = T1 + T2
+
   D = C;
   C = B;
   B = A;
   A = temp1 + temp2;
   }
 
-Uint32 tempHash = intermediateHash.getVal( 0 ) + A;
-intermediateHash.setVal( 0, tempHash );
+// Intermediate_Hash[0] += A;
 
-tempHash = intermediateHash.getVal( 1 ) + B;
-intermediateHash.setVal( 1, tempHash );
+intermediateHash.setVal( 0,
+           intermediateHash.getVal( 0 ) + A );
 
-tempHash = intermediateHash.getVal( 2 ) + C;
-intermediateHash.setVal( 2, tempHash );
+intermediateHash.setVal( 1,
+           intermediateHash.getVal( 1 ) + B );
 
-tempHash = intermediateHash.getVal( 3 ) + D;
-intermediateHash.setVal( 3, tempHash );
+intermediateHash.setVal( 2,
+           intermediateHash.getVal( 2 ) + C );
 
-tempHash = intermediateHash.getVal( 4 ) + E;
-intermediateHash.setVal( 4, tempHash );
+intermediateHash.setVal( 3,
+           intermediateHash.getVal( 3 ) + D );
 
-tempHash = intermediateHash.getVal( 5 ) + F;
-intermediateHash.setVal( 5, tempHash );
+intermediateHash.setVal( 4,
+           intermediateHash.getVal( 4 ) + E );
 
-tempHash = intermediateHash.getVal( 6 ) + G;
-intermediateHash.setVal( 6, tempHash );
+intermediateHash.setVal( 5,
+           intermediateHash.getVal( 5 ) + F );
 
-tempHash = intermediateHash.getVal( 7 ) + H;
-intermediateHash.setVal( 7, tempHash );
+intermediateHash.setVal( 6,
+           intermediateHash.getVal( 6 ) + G );
+
+intermediateHash.setVal( 7,
+           intermediateHash.getVal( 7 ) + H );
 
 return true;
 }
