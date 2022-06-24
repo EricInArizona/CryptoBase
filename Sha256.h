@@ -16,10 +16,7 @@
 // US Secure Hash Algorithms (SHA and
 // SHA-based HMAC and HKDF)
 
-// FIPS 180-2
-
-// Wikipedia article with a lot of links.
-// https://en.wikipedia.org/wiki/SHA-2
+// FIPS 180-3
 
 
 #include "../CppBase/BasicTypes.h"
@@ -42,7 +39,7 @@ class Sha256
   // The C11 standard says that wrapping
   // unsigned integers is the normal behavior.
   // I think C++ works that way.
-  // It's mod 2^32.
+  // No overflow. It's mod 2^32.
 
 
   // From the RFC:
@@ -65,12 +62,15 @@ class Sha256
   //        (((word) << (bits)) |
   //      ((word) >> (32-(bits))))
 
+
+/* Not used.
   static inline Uint32 rotateL( const Uint32 x,
                            const Int32 howMuch )
     {
     return (x << howMuch) |
            (x >> (32 - howMuch));
     }
+*/
 
   // "equivalent and potentially faster."
   // ... on some systems.
@@ -85,7 +85,8 @@ class Sha256
                               const Uint32 z)
     {
     // CH( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
-    return (x & y) ^ ((!x) & z);
+    // Bitwise not ~.
+    return (x & y) ^ ((~x) & z);
     }
 
   static inline Uint32 shaMaj( const Uint32 x,

@@ -132,7 +132,7 @@ class Integer32
 
   inline void appendToCharBuf( CharBuf& charBuf )
     {
-    charBuf.appendUint32(
+    charBuf.appendU32(
                Casting::u64ToU32( base ), 1024 );
 
     }

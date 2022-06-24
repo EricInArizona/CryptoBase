@@ -72,8 +72,7 @@ StIO::putS( "" );
 // CharBuf.truncateLast( Int32 setTo )
 
 // Append that 1 bit.
-charBuf.appendChar( Casting::i32ToByte( 128 ),
-                                        1024 );
+charBuf.appendU8( 128, 1024 );
 // char test = charBuf.getC( 0 );
 // if( (test & 0xFF) == 0x80 )
   // throw "Got that bit.";
@@ -117,26 +116,23 @@ StIO::putS( "" );
 // 512 bits.
 
 for( Int32 count = 0; count < toAdd; count++ )
-  charBuf.appendChar( 0, 1024 );
+  charBuf.appendU8( 0, 1024 );
 
 // It already has seven zero bits after that
-// 1 bit.  Those aren't part of the message 
+// 1 bit.  Those aren't part of the message
 // length.
 
 // A message of zero length makes this zero.
 // "The appended integer is the length of the
 // original message."
-// "abc" is length 3.
-// "The padded message is then processed"
+// "abc" is length 3 times 8.  Bits.
+
 // The hash is done on the padding too.
 
-
-
 Uint64 lengthInBits = originalLength * 8;
-charBuf.appendUint64( lengthInBits,
-                      1024 );
+charBuf.appendU64( lengthInBits,
+                   1024 );
 
-====
 
 Int32 finalSize = charBuf.getLast();
 
@@ -151,16 +147,21 @@ StIO::putS( "" );
 if( (finalSize % 64) != 0 )
   throw "SHA padding finalSize is not right.";
 
-// For the zero length test string.
-// for( Int32 count = 1; count < 64; count++ )
-  // {
-  // char test = charBuf.getC( count );
-  // if( test != 0 )
-    // throw "That is not a zero.";
+/*
+StIO::putS( "Bytes:" );
 
-  // }
+for( Int32 count = 0; count < 64; count++ )
+  {
+  char test = charBuf.getC( count );
+  Int32 show = Casting::u64ToI32( Casting::
+                          charToU32( test ));
 
-// Maximum message size is 2^64 bits.
+  StIO::printFD( count );
+  StIO::printF( ") " );
+  StIO::printFD( show );
+  StIO::putS( "" );
+  }
+*/
 }
 
 
@@ -210,8 +211,7 @@ if( (max % 64) != 0 )
 for( Int32 where = 0; where < max; where += 64 )
   {
   StIO::putS( "Processing message block." );
-  if( !Sha256::processMessageBlock(
-                             charBuf, where ))
+  if( !processMessageBlock( charBuf, where ))
     {
     StIO::putS( "processMessageBlock false." );
     return false;
@@ -236,7 +236,7 @@ getHash( hashBuf );
 const Int32 maxBytes = hashBuf.getLast();
 for( Int32 count = 0; count < maxBytes; count++ )
   {
-  char oneByte = hashBuf.getC( count );
+  Uint8 oneByte = hashBuf.getU8( count );
   char leftC = ByteHex::getLeftChar( oneByte );
   StIO::putChar( leftC );
   char rightC = ByteHex::getRightChar( oneByte );
@@ -259,14 +259,15 @@ void Sha256::getHash( CharBuf& charBuf )
 // i >> 2] // divide by 4.
 // Shift the bits to make it big endian.
 // >> 8 * ( 3 - ( i & 0x03 ) ));
-// i mod 4 goes from zero to 3.
+// i mod 4
+
 
 // The meaning of the word concatinate.
 
 for( Int32 count = 0; count < 8; count++ )
   {
   Uint32 toSet = intermediateHash.getVal( count );
-  charBuf.appendUint32( toSet, 1024 );
+  charBuf.appendU32( toSet, 1024 );
   }
 }
 
@@ -283,9 +284,17 @@ if( (where + 63) >= last )
   return false;
   }
 
+//  for (t = t4 = 0; t &lt; 16; t++, t4 += 4)
+//    W[t] =
+//      (((uint32_t)Message_Block[t4]) << 24) |
+//      (((uint32_t)Message_Block[t4 + 1]) << 16) |
+//      (((uint32_t)Message_Block[t4 + 2]) << 8) |
+//      (((uint32_t)Message_Block[t4 + 3]));
+
+
 for( Int32 count = 0; count < 16; count++ )
   {
-  W.setVal( count, charBuf.getUint32(
+  W.setVal( count, charBuf.getU32(
                        where + (count * 4) ));
   }
 
@@ -334,21 +343,10 @@ for( Int32 t = 0; t < 64; t++ )
   Uint32 temp2 = shaBSigma0( A ) +
                             shaMaj( A, B, C );
 
-  // h = g
-  // g = f
-  // f = e
-  // e = d + T1
-
   H = G;
   G = F;
   F = E;
   E = D + temp1;
-
-  // d = c
-  // c = b
-  // b = a
-  // a = T1 + T2
-
   D = C;
   C = B;
   B = A;
