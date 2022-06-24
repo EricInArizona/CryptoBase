@@ -30,7 +30,6 @@ class Sha256
   private:
   bool testForCopy = false;
   Uint32Array intermediateHash;
-  // W is called the Message Schedule.
   Uint32Array W;
 
   void init( void );
@@ -42,49 +41,28 @@ class Sha256
   // No overflow. It's mod 2^32.
 
 
-  // From the RFC:
-
-  // #define SHA256_ROTR(bits,word)                         \
-  //             (((word) >> (bits)) |
-  //             ((word) << (32-(bits))))
-
   static inline Uint32 rotateR( const Uint32 x,
                          const Int32 howMuch )
     {
-    // ROTR^n(x) = (x >> n) OR (x <<(w-n))
-
     return (x >> howMuch) |
            (x << (32 - howMuch));
     }
 
 
-  // #define SHA256_ROTL(bits,word)                         \
-  //        (((word) << (bits)) |
-  //      ((word) >> (32-(bits))))
+// Not used.
+//  static inline Uint32 rotateL( const Uint32 x,
+//                        const Int32 howMuch )
+//     {
+//     return (x << howMuch) |
+//            (x >> (32 - howMuch));
+//     }
 
-
-/* Not used.
-  static inline Uint32 rotateL( const Uint32 x,
-                           const Int32 howMuch )
-    {
-    return (x << howMuch) |
-           (x >> (32 - howMuch));
-    }
-*/
-
-  // "equivalent and potentially faster."
-  // ... on some systems.
-  // #define SHA_Ch(x, y, z)
-  //        (((x) & ((y) ^ (z))) ^ (z))
-  // #define SHA_Maj(x, y, z)
-  //     (((x) & ((y) | (z))) | ((y) & (z)))
 
 
   static inline Uint32 shaCh( const Uint32 x,
                               const Uint32 y,
                               const Uint32 z)
     {
-    // CH( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
     // Bitwise not ~.
     return (x & y) ^ ((~x) & z);
     }
@@ -93,8 +71,6 @@ class Sha256
                                const Uint32 y,
                                const Uint32 z )
     {
-    // MAJ( x, y, z) = (x AND y) XOR (x AND z)
-    //            XOR (y AND z)
     return (x & y) ^ (x & z) ^ (y & z);
     }
 
@@ -108,63 +84,27 @@ class Sha256
 
   static inline Uint32 shaBSigma0( const Uint32 x )
     {
-    // BSIG0(x) = ROTR^2(x) XOR ROTR^13(x)
-    //               XOR ROTR^22(x)
-
-    // #define SHA256_SIGMA0(word)
-    //    (SHA256_ROTR( 2,word) ^
-    //    SHA256_ROTR(13,word) ^
-    //    SHA256_ROTR(22,word))
-
     return rotateR( x, 2 ) ^ rotateR( x, 13 ) ^
                              rotateR( x, 22 );
     }
 
   static inline Uint32 shaBSigma1( const Uint32 x )
     {
-    // BSIG1(x) = ROTR^6(x) XOR ROTR^11(x) XOR
-    //                  ROTR^25(x)
-
-    // #define SHA256_SIGMA1(word)
-    //     (SHA256_ROTR( 6,word) ^
-    //     SHA256_ROTR(11,word) ^
-    //     SHA256_ROTR(25,word))
-
     return rotateR( x, 6 ) ^ rotateR( x, 11 ) ^
                              rotateR( x, 25 );
     }
 
   static inline Uint32 shaSSigma0( const Uint32 x )
     {
-    // SSIG0(x) = ROTR^7(x) XOR ROTR^18(x) XOR
-    //  SHR^3(x)
-
-    // #define SHA256_sigma0(word)
-    //      (SHA256_ROTR( 7,word) ^
-    //       SHA256_ROTR(18,word) ^
-    //       SHA256_SHR( 3,word))
-
     return rotateR( x, 7 ) ^ rotateR( x, 18 ) ^
                              (x >> 3);
     }
 
   static inline Uint32 shaSSigma1( const Uint32 x )
     {
-    // SSIG1(x) = ROTR^17(x) XOR ROTR^19(x) XOR
-    //  SHR^10(x)
-
-    // #define SHA256_sigma1(word)
-    //     (SHA256_ROTR(17,word) ^
-    //      SHA256_ROTR(19,word) ^
-    //      SHA256_SHR(10,word))
-
     return rotateR( x, 17 ) ^ rotateR( x, 19 ) ^
                              (x >> 10);
     }
-
-
-
-  // #define SHA_Parity(x, y, z)  ((x) ^ (y) ^ (z))
 
 
   // For SHA 256.
@@ -202,7 +142,6 @@ class Sha256
       0x84c87814, 0x8cc70208,
       0x90befffa, 0xa4506ceb,
       0xbef9a3f7, 0xc67178f2 };
-
 
 
   public:

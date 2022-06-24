@@ -10,7 +10,6 @@
 #include "Sha256.h"
 #include "../CppBase/StIO.h"
 #include "../CppBase/ByteHex.h"
-// #include "../CryptoBase/Base16Number.h"
 
 
 
@@ -55,17 +54,15 @@
 
 
 
-
-
 void Sha256::appendPadding( CharBuf& charBuf )
 {
 const Uint64 originalLength =
              Casting::i32ToU64( charBuf.getLast());
 
-StIO::printF( "originalLength: " );
-StIO::printFD( Casting::u64ToI32(
-              originalLength ));
-StIO::putS( "" );
+// StIO::printF( "originalLength: " );
+// StIO::printFD( Casting::u64ToI32(
+//               originalLength ));
+// StIO::putS( "" );
 
 
 // To restore it to the original length:
@@ -73,15 +70,12 @@ StIO::putS( "" );
 
 // Append that 1 bit.
 charBuf.appendU8( 128, 1024 );
-// char test = charBuf.getC( 0 );
-// if( (test & 0xFF) == 0x80 )
-  // throw "Got that bit.";
 
 Int32 howBig = charBuf.getLast() % 64;
 
-StIO::printF( "howBig: " );
-StIO::printFD( howBig );
-StIO::putS( "" );
+// StIO::printF( "howBig: " );
+// StIO::printFD( howBig );
+// StIO::putS( "" );
 
 
 Int32 toAdd = 64 - howBig;
@@ -95,9 +89,9 @@ Int32 toAdd = 64 - howBig;
 // if( toAdd == 64 )
   // toAdd = 0;
 
-StIO::printF( "toAdd at top: " );
-StIO::printFD( toAdd );
-StIO::putS( "" );
+// StIO::printF( "toAdd at top: " );
+// StIO::printFD( toAdd );
+// StIO::putS( "" );
 
 // For SHA 512 it's a 128 bit length value.
 // So 16 bytes.
@@ -107,9 +101,9 @@ toAdd -= 8;
 if( toAdd < 0 )
   toAdd += 64;
 
-StIO::printF( "toAdd: " );
-StIO::printFD( toAdd );
-StIO::putS( "" );
+// StIO::printF( "toAdd: " );
+// StIO::printFD( toAdd );
+// StIO::putS( "" );
 
 // The spec says this has to be the smallest
 // number of zeros to make it come to 64 bytes.
@@ -118,50 +112,14 @@ StIO::putS( "" );
 for( Int32 count = 0; count < toAdd; count++ )
   charBuf.appendU8( 0, 1024 );
 
-// It already has seven zero bits after that
-// 1 bit.  Those aren't part of the message
-// length.
-
-// A message of zero length makes this zero.
-// "The appended integer is the length of the
-// original message."
-// "abc" is length 3 times 8.  Bits.
-
-// The hash is done on the padding too.
-
 Uint64 lengthInBits = originalLength * 8;
 charBuf.appendU64( lengthInBits,
                    1024 );
 
-
 Int32 finalSize = charBuf.getLast();
-
-StIO::printF( "finalSize: " );
-StIO::printFD( finalSize );
-StIO::putS( "" );
-
-StIO::printF( "finalSize mod: " );
-StIO::printFD( finalSize % 64 );
-StIO::putS( "" );
-
 if( (finalSize % 64) != 0 )
   throw "SHA padding finalSize is not right.";
 
-/*
-StIO::putS( "Bytes:" );
-
-for( Int32 count = 0; count < 64; count++ )
-  {
-  char test = charBuf.getC( count );
-  Int32 show = Casting::u64ToI32( Casting::
-                          charToU32( test ));
-
-  StIO::printFD( count );
-  StIO::printF( ") " );
-  StIO::printFD( show );
-  StIO::putS( "" );
-  }
-*/
 }
 
 
@@ -169,7 +127,6 @@ for( Int32 count = 0; count < 64; count++ )
 void Sha256::init( void )
 {
 W.setSize( 64 );
-
 intermediateHash.setSize( 8 );
 
 // This is how they get set before the first
@@ -179,11 +136,6 @@ intermediateHash.setSize( 8 );
 // A block chain.
 
 // Initial Hash Values: FIPS 180-3
-// static uint32_t SHA256_H0[SHA256HashSize/4] =
-//  {
-//  0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A,
-//  0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19
-// };
 
 intermediateHash.setVal( 0, 0x6A09E667 );
 intermediateHash.setVal( 1, 0xBB67AE85 );
@@ -193,10 +145,8 @@ intermediateHash.setVal( 4, 0x510E527F );
 intermediateHash.setVal( 5, 0x9B05688C );
 intermediateHash.setVal( 6, 0x1F83D9AB );
 intermediateHash.setVal( 7, 0x5BE0CD19 );
-
-StIO::putS( "Hash at start:" );
-showHash();
 }
+
 
 
 bool Sha256::processAllBlocks( CharBuf& charBuf )
@@ -210,7 +160,7 @@ if( (max % 64) != 0 )
 
 for( Int32 where = 0; where < max; where += 64 )
   {
-  StIO::putS( "Processing message block." );
+  // StIO::putS( "Processing message block." );
   if( !processMessageBlock( charBuf, where ))
     {
     StIO::putS( "processMessageBlock false." );
@@ -218,11 +168,10 @@ for( Int32 where = 0; where < max; where += 64 )
     }
   }
 
-
 StIO::putS( "Hash at end:" );
 showHash();
 
-StIO::putS( "Finished the block chain." );
+// StIO::putS( "Finished the block chain." );
 return true;
 }
 
@@ -252,20 +201,12 @@ StIO::putChar( '\n' );
 // Get the Message Digest as a series of bytes.
 void Sha256::getHash( CharBuf& charBuf )
 {
-// From the RFC code:
-//  for (i = 0; i &lt; HashSize; ++i)
-//    Message_Digest[i] = (uint8_t)
-//      Intermediate_Hash[
-// i >> 2] // divide by 4.
-// Shift the bits to make it big endian.
-// >> 8 * ( 3 - ( i & 0x03 ) ));
-// i mod 4
-
-
-// The meaning of the word concatinate.
+// In the RFC, this is the meaning of the word
+// concatinate.
 
 for( Int32 count = 0; count < 8; count++ )
   {
+  // Big endian.
   Uint32 toSet = intermediateHash.getVal( count );
   charBuf.appendU32( toSet, 1024 );
   }
@@ -284,14 +225,6 @@ if( (where + 63) >= last )
   return false;
   }
 
-//  for (t = t4 = 0; t &lt; 16; t++, t4 += 4)
-//    W[t] =
-//      (((uint32_t)Message_Block[t4]) << 24) |
-//      (((uint32_t)Message_Block[t4 + 1]) << 16) |
-//      (((uint32_t)Message_Block[t4 + 2]) << 8) |
-//      (((uint32_t)Message_Block[t4 + 3]));
-
-
 for( Int32 count = 0; count < 16; count++ )
   {
   W.setVal( count, charBuf.getU32(
@@ -300,11 +233,6 @@ for( Int32 count = 0; count < 16; count++ )
 
 for( Int32 count = 16; count < 64; count++ )
   {
-  // Wt = SSIG1( W(t-2)) + W(t-7) +
-  //         SSIG0( w(t-15)) + W( t-16)
-  // W[t] = SHA256_sigma1(W[t-2]) + W[t-7] +
-  //      SHA256_sigma0(W[t-15]) + W[t-16];
-
   Uint32 toSet1 = shaSSigma1( W.getVal( count - 2 ));
   Uint32 toSet2 = W.getVal( count - 7 );
   Uint32 toSet3 = shaSSigma0( W.getVal(
@@ -328,17 +256,9 @@ Uint32 H = intermediateHash.getVal( 7 );
 
 for( Int32 t = 0; t < 64; t++ )
   {
-  // T1 = h + BSIG1(e) + CH(e,f,g) + Kt + Wt
-  // temp1 = H + SHA256_SIGMA1(E) +
-  //       SHA_Ch(E,F,G) + K[t] + W[t];
-
   Uint32 temp1 = H + shaBSigma1( E ) +
          shaCh( E, F, G ) + K[t] +
          W.getVal( t );
-
-
-  // T2 = BSIG0(a) + MAJ(a,b,c)
-  // temp2 = SHA256_SIGMA0(A) + SHA_Maj(A,B,C);
 
   Uint32 temp2 = shaBSigma0( A ) +
                             shaMaj( A, B, C );
