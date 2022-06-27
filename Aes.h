@@ -15,6 +15,23 @@
 // #include "../CppBase/Str.h"
 
 
+// In Row major order, the consecutive elements
+// in an array lie next to each other.
+// Column major, consecutive elements in a column
+// are next to each other.
+
+/*
+setV( const Int32 column,
+                    const Int32 row,
+                    const Int64 val )
+    {
+// This is colum Major order because consecutive
+// elements in a column are next to each other.
+    Int32 where = (row *
+                    ProjConst::digitArraySize)
+                    + column;
+*/
+
 class Aes
   {
   private:

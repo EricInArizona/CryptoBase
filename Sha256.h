@@ -37,7 +37,7 @@ class Sha256
 
   // The C11 standard says that wrapping
   // unsigned integers is the normal behavior.
-  // I think C++ works that way.
+  // C++ works that way.
   // No overflow. It's mod 2^32.
 
 
