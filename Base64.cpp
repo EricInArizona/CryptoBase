@@ -14,6 +14,97 @@
 #include "../CppBase/MathC.h"
 
 
+bool Base64::lettersToBits( CharBuf& outBuf,
+                             const char char1,
+                             const char char2,
+                             const char char3,
+                             const char char4 )
+{
+Uint32 result = 0;
+
+// There can be at most two pad characters
+// in the last 4 letter group.
+// Any characters after that would be
+// ignored.
+
+if( char1 == padC )
+  throw "Base64 padC at first char.";
+  // return false;
+
+if( char2 == padC )
+  throw "Base64 padC at second char.";
+  // return false;
+
+Uint32 bits1 = charTo6Bits( char1, false );
+Uint32 bits2 = charTo6Bits( char2, false );
+Uint32 bits3 = charTo6Bits( char3, false );
+Uint32 bits4 = charTo6Bits( char4, false );
+
+if( (bits1 >> 6) != 0 )
+  throw "Base64 Bad bits a bits1.";
+  // return false;
+
+if( (bits2 >> 6) != 0 )
+  throw "Base64 Bad bits a bits2.";
+  // return false;
+
+if( char3 != padC )
+  {
+  if( (bits3 >> 6) != 0 )
+    throw "Base64 Bad bits a bits3.";
+
+  // return false;
+  }
+
+if( char4 != padC )
+  {
+  if( (bits4 >> 6) != 0 )
+    throw "Base64 Bad bits a bits4.";
+
+  }
+
+if( char3 == padC )
+  {
+  result = bits1; // Left 6 bits.
+  result <<= 2;
+  result |= bits2; // Right 2 bits.
+  outBuf.appendU8( result, 1024 );
+  return false; // No more to do.
+  }
+
+if( char4 == padC )
+  {
+  // There are 16 bits left.
+  result = bits1; // Left 6 bits.
+  result <<= 2;
+  result |= bits2 >> 4; // 2 bits.
+  result <<= 4;
+  result |= bits2 >> 2; // 4 bits.
+  result <<= 4;
+  result |= bits3; // 4 bits.
+
+  outBuf.appendU16( result, 1024 );
+  return false; 
+  }
+
+// There are 24 bits left.
+result = bits1; // Left 6 bits.
+
+result <<= 6;
+result |= bits2; // 12 bits.
+result <<= 6;
+result |= bits3; // 18 bits.
+result <<= 6;
+result |= bits4;  // 24 bits.
+
+outBuf.append24Bits( result, 1024 );
+ 
+return true; // More to do?
+}
+
+
+
+
 bool Base64::codeToBytes( CharBuf& inBuf,
                           CharBuf& outBuf )
 {
@@ -22,7 +113,11 @@ outBuf.clear();
 const Int32 lastIn = inBuf.getLast();
 
 if( (lastIn % 4) != 0 )
-  throw "Missing padding characters?";
+  {
+  StIO::putS( "Bad characters in codeToBytes." );
+  // Or missing padding characters?
+  return false;
+  }
 
 if( lastIn == 0 )
   return true; // Empty outBuf.
@@ -35,7 +130,7 @@ outBuf.setSize( outSize );
 
 StIO::putS( "out size: " );
 StIO::printFD( outSize );
-StIO::printF( "\n" );
+StIO::putChar( '\n' );
 
 for( Int32 count = 0; count < lastIn; count += 4 )
   {
@@ -47,20 +142,13 @@ for( Int32 count = 0; count < lastIn; count += 4 )
   char char3 = 0x7F & (letters4 >> 8);
   char char4 = 0x7F & letters4;
 
-  Uint32 bits1 = charTo6Bits( char1, false );
-  Uint32 bits2 = charTo6Bits( char2, false );
-  Uint32 bits3 = charTo6Bits( char3, false );
-  Uint32 bits4 = charTo6Bits( char4, false );
+  if( !lettersToBits( outBuf,
+                      char1,
+                      char2,
+                      char3,
+                      char4 ))
+    return true; // No more to do.
 
-  Uint32 bitsAll = bits1;
-  bitsAll <<= 6;
-  bitsAll |= bits2;
-  bitsAll <<= 6;
-  bitsAll |= bits3;
-  bitsAll <<= 6;
-  bitsAll |= bits4;
-
-  outBuf.append24Bits( bitsAll, 1024 );
   }
 
 return true;
@@ -180,10 +268,10 @@ CharBuf fileData;
 CharBuf outData;
 CharBuf testData;
 
-Str fileName( "\\ABackups\\TestGMap.zip" );
-FileIO::readAll( fileName, fileData );
+// FileIO::readAll( "\\ABackups\\TestGMap.zip",
+//                 fileData );
 
-/*
+
 fileData.appendChar( 'f', 1024 );
 fileData.appendChar( 'o', 1024 );
 fileData.appendChar( 'o', 1024 );
@@ -202,30 +290,28 @@ fileData.appendChar( 'o', 1024 );
 
 fileData.appendChar( 'b', 1024 );
 fileData.appendChar( 'a', 1024 );
-fileData.appendChar( 'r', 1024 );
+// fileData.appendChar( 'r', 1024 );
 
 StIO::putCharBuf( fileData );
 StIO::printF( "\n" );
-*/
+
 
 bytesToCode( fileData, outData );
 
-/*
 StIO::putCharBuf( outData );
 StIO::printF( "\n" );
 StIO::putS( "End of data." );
-*/
+
 
 codeToBytes( outData,
              testData );
 
-/*
+
 StIO::putS( "\nBack to normal:" );
 
 StIO::putCharBuf( testData );
 StIO::printF( "\n" );
 StIO::putS( "End of data." );
-*/
 
 if( testData.equalsCBuf( fileData ))
   StIO::putS( "Test is good." );
@@ -240,13 +326,27 @@ else
 // it back to a zip file you can tell if it
 // got corrupted if it can't be unzipped.
 
-// ==== copy( is readall, writeall )
+// FileIO::writeAll( "\\ABackups\\TestGMapTest.zip",
+ //                 testData );
+
+}
 
 
-Str fileNameOut( "\\ABackups\\TestGMapTest.zip" );
+void Base64::setupBoolAlpha( void )
+{
+const Int32 alphaSize = 128;
 
-FileIO::writeCharBuf( fileNameOut,
-                      testData );
+boolAlpha.setSize( alphaSize );
 
+for( Int32 count = 0; count < alphaSize; count++ )
+  boolAlpha.setVal( count, false );
 
+const Int32 max = charSet.getLast();
+for( Int32 count = 0; count < max; count++ )
+  {
+  char c = charSet.getC( count );
+  boolAlpha.setVal( c, true );
+  }
+
+boolAlpha.setVal( padC, true );
 }

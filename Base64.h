@@ -12,14 +12,10 @@
 // Data Encodings
 
 
-// "represents 24-bit groups of input bits as
-// output strings of 4 encoded characters."
-
-
 
 #include "../CppBase/BasicTypes.h"
 #include "../CppBase/CharBuf.h"
-#include "../CppBase/Str.h"
+#include "../CppBase/BoolArray.h"
 
 
 
@@ -39,7 +35,8 @@ class Base64
     //   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     //   "abcdefghijklmnopqrstuvwxyz0123456789-_";
 
-  Str charSet;
+  BoolArray boolAlpha;
+  CharBuf charSet;
   const char padC = '=';
 
   // Percent encode would be its own class.
@@ -52,6 +49,7 @@ class Base64
     {
     charSet.clear();
     charSet.appendCharPt( Letters64 );
+    setupBoolAlpha();
     }
 
   inline Base64( const Base64& in )
@@ -65,6 +63,8 @@ class Base64
   inline ~Base64( void )
     {
     }
+
+  void setupBoolAlpha( void );
 
   inline char bits6ToChar( const Uint32 theByte )
                                             const
@@ -194,6 +194,11 @@ class Base64
   bool codeToBytes( CharBuf& inBuf,
                     CharBuf& outBuf );
 
+  bool lettersToBits( CharBuf& outBuf,
+                      const char char1,
+                      const char char2,
+                      const char char3,
+                      const char char4 );
 
 
 
