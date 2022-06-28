@@ -20,10 +20,10 @@ D[0] = 0;
 }
 
 
-Base16Number::Base16Number( Str& toSet )
+Base16Number::Base16Number( const CharBuf& toSet )
 {
 D = new Int32[digitArraySize];
-setFromStr( toSet );
+setFromCharBuf( toSet );
 }
 
 
@@ -47,7 +47,8 @@ delete[] D;
 
 
 
-void Base16Number::setFromStr( const Str& toSet )
+void Base16Number::setFromCharBuf( 
+                           const CharBuf& toSet )
 {
 index = 0;
 D[0] = 0;
@@ -85,7 +86,7 @@ index = where - 1;
 
 
 
-void Base16Number::setFromBytes( 
+void Base16Number::setFromBytes(
                           const CharBuf& charBuf )
 {
 index = 0;
@@ -104,7 +105,7 @@ for( Int32 count = last - 1; count >= 0; count-- )
     throw "Base16Number: Too big for array.";
 
   Int32 c = charBuf.getC( count );
-  
+
 
   D[where] = c & 0xF;
   where++;
@@ -120,5 +121,3 @@ if( where == 0 )
 
 index = where - 1;
 }
-
-

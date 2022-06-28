@@ -12,7 +12,7 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "../CppBase/Str.h"
+#include "../CppBase/CharBuf.h"
 
 
 class Base10Number
@@ -37,7 +37,7 @@ class Base10Number
   Int32* D;
 
   public:
-  Base10Number( Str& toSet );
+  Base10Number( CharBuf& toSet );
   Base10Number( const Base10Number& obj );
   ~Base10Number( void );
   inline Int32 getD( const Int32 where )
@@ -61,6 +61,6 @@ class Base10Number
     return (digit - '0');
     }
 
-  void setFromStr( const Str& toSet );
+  void setFromCharBuf( const CharBuf& toSet );
 
   };

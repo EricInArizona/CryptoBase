@@ -13,8 +13,8 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "../CppBase/Str.h"
 #include "../CppBase/FileIO.h"
+#include "../CppBase/CharBuf.h"
 #include "Integer.h"
 #include "SPrimes.h"
 #include "TwoDInt64.h"
@@ -24,7 +24,7 @@
 class IntegerMath
   {
   private:
-  Int32 testForCopy = 123;
+  bool testForCopy = false;
   // Scratch pad, just like you would do on paper.
   TwoDInt64 M;
   Int64* scratch;
@@ -71,7 +71,8 @@ class IntegerMath
   void setFromStr( Integer& result, Str& in );
 */
 
-  Str toString10( const Integer& from );
+  void toString10( const Integer& from,
+                   CharBuf& toSet );
   void square( Integer& toSquare );
   Int32 getMod24( const Integer& in,
                   const Int64 divisor );

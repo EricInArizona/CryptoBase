@@ -14,7 +14,7 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "../CppBase/Str.h"
+#include "../CppBase/CharBuf.h"
 
 
 class Base16Number
@@ -27,7 +27,7 @@ class Base16Number
 
   public:
   Base16Number( void );
-  Base16Number( Str& toSet );
+  Base16Number( const CharBuf& toSet );
   Base16Number( const Base16Number& obj );
   ~Base16Number( void );
   inline Int32 getD( const Int32 where )
@@ -111,7 +111,7 @@ class Base16Number
     }
 
 
-  void setFromStr( const Str& toSet );
+  void setFromCharBuf( const CharBuf& toSet );
   void setFromBytes( const CharBuf& charBuf );
 
   };

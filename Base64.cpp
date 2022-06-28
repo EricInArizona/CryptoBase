@@ -20,6 +20,10 @@ bool Base64::lettersToBits( CharBuf& outBuf,
                              const char char3,
                              const char char4 )
 {
+// This should not happen.
+if( char1 == padC )
+  return false;
+
 Uint32 result = 0;
 
 // There can be at most two pad characters
@@ -27,9 +31,6 @@ Uint32 result = 0;
 // Any characters after that would be
 // ignored.
 
-if( char1 == padC )
-  throw "Base64 padC at first char.";
-  // return false;
 
 if( char2 == padC )
   throw "Base64 padC at second char.";
@@ -67,7 +68,14 @@ if( char3 == padC )
   {
   result = bits1; // Left 6 bits.
   result <<= 2;
-  result |= bits2; // Right 2 bits.
+
+  // It is added like this:
+  // char2 = (bits8 & 0x3) << 4;
+  // The right two bits.
+
+  // StIO::putS( "Right here." );
+
+  result |= bits2 >> 4; // 2 bits.
   outBuf.appendU8( result, 1024 );
   return false; // No more to do.
   }
@@ -77,14 +85,16 @@ if( char4 == padC )
   // There are 16 bits left.
   result = bits1; // Left 6 bits.
   result <<= 2;
-  result |= bits2 >> 4; // 2 bits.
+  result |= (bits2 >> 4); // 2 bits.
+
   result <<= 4;
-  result |= bits2 >> 2; // 4 bits.
+  result |= bits2 & 0x0F; // 4 bits.
   result <<= 4;
-  result |= bits3; // 4 bits.
+  result |= (bits3 >> 2); // 4 bits.
 
   outBuf.appendU16( result, 1024 );
-  return false; 
+
+  return false;
   }
 
 // There are 24 bits left.
@@ -98,8 +108,8 @@ result <<= 6;
 result |= bits4;  // 24 bits.
 
 outBuf.append24Bits( result, 1024 );
- 
-return true; // More to do?
+
+return true;
 }
 
 
@@ -289,7 +299,7 @@ fileData.appendChar( 'o', 1024 );
 fileData.appendChar( 'o', 1024 );
 
 fileData.appendChar( 'b', 1024 );
-fileData.appendChar( 'a', 1024 );
+// fileData.appendChar( 'a', 1024 );
 // fileData.appendChar( 'r', 1024 );
 
 StIO::putCharBuf( fileData );

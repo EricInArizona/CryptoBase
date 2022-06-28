@@ -13,10 +13,10 @@
 
 
 
-Base10Number::Base10Number( Str& toSet )
+Base10Number::Base10Number( CharBuf& toSet )
 {
 D = new Int32[digitArraySize];
-setFromStr( toSet );
+setFromCharBuf( toSet );
 }
 
 
@@ -40,7 +40,8 @@ delete[] D;
 
 
 
-void Base10Number::setFromStr( const Str& toSet )
+void Base10Number::setFromCharBuf(
+                          const CharBuf& toSet )
 {
 index = 0;
 D[0] = 0;

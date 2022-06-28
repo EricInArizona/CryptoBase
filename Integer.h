@@ -14,9 +14,7 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "../CppBase/Str.h"
 #include "../CppBase/RangeC.h"
-
 #include "ProjConst.h"
 #include "IntBuf.h"
 

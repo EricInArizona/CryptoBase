@@ -9,7 +9,6 @@
 
 
 #include "../CppBase/Casting.h"
-#include "../CppBase/CharBuf.h"
 
 #include "IntegerMath.h"
 #include "Base10Number.h"
@@ -29,7 +28,7 @@ IntegerMath::IntegerMath( const IntegerMath& in )
 scratch = new Int64[ProjConst::digitArraySize];
 
 // Make the compiler think in is being used.
-if( in.testForCopy == 7 )
+if( in.testForCopy )
   return;
 
 throw "Copy constructor: IntegerMath.";
@@ -747,21 +746,24 @@ for( Uint32 count = 1; count <= last; count++ )
 */
 
 
-Str IntegerMath::toString10( const Integer& from )
+void IntegerMath::toString10( const Integer& from,
+                              CharBuf& toSet )
 {
 if( from.isLong48())
   {
   Int64 N = from.getAsLong48();
-  Str nS( N );
+  CharBuf nS( N );
   if( from.getNegative() )
     {
-    Str both( "-" );
-    both.append( nS );
-    return both;
+    CharBuf both( "-" );
+    both.appendCharBuf( nS );
+    toSet.copy( both );
+    return;
     }
   else
     {
-    return nS;
+    toSet.copy( nS );
+    return;
     }
   }
 
@@ -783,12 +785,8 @@ while( !toDivide.isZero())
 if( from.getNegative() )
   cBuf.appendChar( '-', 1024 );
 
-CharArray cArray;
-cBuf.copyToCharArray( cArray );
-
-Str result( cArray );
-result.reverse();
-return result;
+toSet.copy( cBuf );
+toSet.reverse();
 }
 
 
