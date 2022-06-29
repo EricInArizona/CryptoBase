@@ -14,7 +14,7 @@
 #include "../CppBase/MathC.h"
 
 
-bool Base64::lettersToBits( CharBuf& outBuf,
+Int32 Base64::lettersToBits( CharBuf& outBuf,
                              const char char1,
                              const char char2,
                              const char char3,
@@ -22,7 +22,7 @@ bool Base64::lettersToBits( CharBuf& outBuf,
 {
 // This should not happen.
 if( char1 == padC )
-  return false;
+  return -1;
 
 Uint32 result = 0;
 
@@ -33,8 +33,7 @@ Uint32 result = 0;
 
 
 if( char2 == padC )
-  throw "Base64 padC at second char.";
-  // return false;
+  return -1;
 
 Uint32 bits1 = charTo6Bits( char1, false );
 Uint32 bits2 = charTo6Bits( char2, false );
@@ -42,25 +41,22 @@ Uint32 bits3 = charTo6Bits( char3, false );
 Uint32 bits4 = charTo6Bits( char4, false );
 
 if( (bits1 >> 6) != 0 )
-  throw "Base64 Bad bits a bits1.";
-  // return false;
+  return -1;
 
 if( (bits2 >> 6) != 0 )
-  throw "Base64 Bad bits a bits2.";
-  // return false;
+  return -1;
 
 if( char3 != padC )
   {
   if( (bits3 >> 6) != 0 )
-    throw "Base64 Bad bits a bits3.";
+    return -1;
 
-  // return false;
   }
 
 if( char4 != padC )
   {
   if( (bits4 >> 6) != 0 )
-    throw "Base64 Bad bits a bits4.";
+    return -1;
 
   }
 
@@ -69,15 +65,9 @@ if( char3 == padC )
   result = bits1; // Left 6 bits.
   result <<= 2;
 
-  // It is added like this:
-  // char2 = (bits8 & 0x3) << 4;
-  // The right two bits.
-
-  // StIO::putS( "Right here." );
-
   result |= bits2 >> 4; // 2 bits.
   outBuf.appendU8( result, 1024 );
-  return false; // No more to do.
+  return 1; // 1 extra byte at end.
   }
 
 if( char4 == padC )
@@ -94,7 +84,7 @@ if( char4 == padC )
 
   outBuf.appendU16( result, 1024 );
 
-  return false;
+  return 2; // 2 bytes at end.
   }
 
 // There are 24 bits left.
@@ -109,7 +99,7 @@ result |= bits4;  // 24 bits.
 
 outBuf.append24Bits( result, 1024 );
 
-return true;
+return 3; // 3 bytes at end.
 }
 
 
@@ -138,10 +128,6 @@ Int32 outSize = MathC::round32( sizeDbl );
 outSize += 1024;
 outBuf.setSize( outSize );
 
-StIO::putS( "out size: " );
-StIO::printFD( outSize );
-StIO::putChar( '\n' );
-
 for( Int32 count = 0; count < lastIn; count += 4 )
   {
   Uint32 letters4 = inBuf.getU32( count );
@@ -152,11 +138,16 @@ for( Int32 count = 0; count < lastIn; count += 4 )
   char char3 = 0x7F & (letters4 >> 8);
   char char4 = 0x7F & letters4;
 
-  if( !lettersToBits( outBuf,
-                      char1,
-                      char2,
-                      char3,
-                      char4 ))
+  Int32 bytesAtEnd = lettersToBits( outBuf,
+                                    char1,
+                                    char2,
+                                    char3,
+                                    char4 );
+
+  if( bytesAtEnd < 1 )
+    return false;
+
+  if( bytesAtEnd < 3 )
     return true; // No more to do.
 
   }
@@ -185,10 +176,6 @@ Int32 outSize = MathC::round32( sizeDbl );
 outSize += 1024;
 outBuf.setSize( outSize );
 
-// StIO::putS( "out size: " );
-// StIO::printFD( outSize );
-// StIO::printF( "\n" );
-
 const Int32 lastPart = whole3 * 3;
 
 for( Int32 count = 0; count < lastPart;
@@ -209,9 +196,6 @@ for( Int32 count = 0; count < lastPart;
   letter = bits6ToChar( bits24 & 0x3F );
   outBuf.appendChar( letter, 1024 );
   }
-
-// if( (outBuf.getLast() % 4) != 0 )
-  // throw "Base64 out mod 4 not zero.";
 
 if( remainder == 0 )
   return true; // No padding.
@@ -276,12 +260,14 @@ StIO::putS( "Starting Base64 test." );
 
 CharBuf fileData;
 CharBuf outData;
-CharBuf testData;
-
-// FileIO::readAll( "\\ABackups\\TestGMap.zip",
-//                 fileData );
+CharBuf testDataIn;
+CharBuf testDataOut;
 
 
+FileIO::readAll( "\\ABackups\\TestGMap.zip",
+                 fileData );
+
+/*
 fileData.appendChar( 'f', 1024 );
 fileData.appendChar( 'o', 1024 );
 fileData.appendChar( 'o', 1024 );
@@ -293,6 +279,10 @@ fileData.appendChar( 'o', 1024 );
 fileData.appendChar( 'f', 1024 );
 fileData.appendChar( 'o', 1024 );
 fileData.appendChar( 'o', 1024 );
+
+// Add some characters like in MIME.
+fileData.appendChar( '\r', 1024 );
+fileData.appendChar( '\n', 1024 );
 
 fileData.appendChar( 'f', 1024 );
 fileData.appendChar( 'o', 1024 );
@@ -303,52 +293,51 @@ fileData.appendChar( 'b', 1024 );
 // fileData.appendChar( 'r', 1024 );
 
 StIO::putCharBuf( fileData );
-StIO::printF( "\n" );
+StIO::putChar( '\n' );
+*/
 
+// Filter out things like line feed and CR,
+// like with MIME encoding.
+filterCharSet( fileData, testDataIn );
 
-bytesToCode( fileData, outData );
+bytesToCode( testDataIn, outData );
+StIO::putChar( '\n' );
 
-StIO::putCharBuf( outData );
-StIO::printF( "\n" );
-StIO::putS( "End of data." );
-
+// StIO::putCharBuf( outData );
+// StIO::putChar( '\n' );
 
 codeToBytes( outData,
-             testData );
+             testDataOut );
 
 
-StIO::putS( "\nBack to normal:" );
+// StIO::putS( "\nBack to normal:" );
+// StIO::putCharBuf( testDataOut );
+// StIO::putChar( '\n' );
 
-StIO::putCharBuf( testData );
-StIO::printF( "\n" );
-StIO::putS( "End of data." );
-
-if( testData.equalsCBuf( fileData ))
+if( testDataIn.equalsCBuf( testDataOut ))
   StIO::putS( "Test is good." );
 else
   StIO::putS( "Test is bad." );
 
 
-
-
 // A zip file should contain random looking data.
-// The full range of bytes.  Also converting
+// The full range of bytes.  Also when converting
 // it back to a zip file you can tell if it
 // got corrupted if it can't be unzipped.
 
-// FileIO::writeAll( "\\ABackups\\TestGMapTest.zip",
- //                 testData );
+FileIO::writeAll( "\\ABackups\\TestGMapTest.zip",
+                  testDataOut );
 
 }
 
 
+
 void Base64::setupBoolAlpha( void )
 {
-const Int32 alphaSize = 128;
+boolAlpha.setSize( boolAlphaSize );
 
-boolAlpha.setSize( alphaSize );
-
-for( Int32 count = 0; count < alphaSize; count++ )
+for( Int32 count = 0; count < boolAlphaSize;
+                                       count++ )
   boolAlpha.setVal( count, false );
 
 const Int32 max = charSet.getLast();
@@ -359,4 +348,35 @@ for( Int32 count = 0; count < max; count++ )
   }
 
 boolAlpha.setVal( padC, true );
+}
+
+
+
+void Base64::filterCharSet( CharBuf& inBuf,
+                            CharBuf& outBuf )
+{
+// StIO::putS( "Filtering data." );
+
+const Int32 max = inBuf.getLast();
+outBuf.setSize( max + 16 );
+
+for( Int32 count = 0; count < max; count++ )
+  {
+  char c = inBuf.getC( count );
+  // char is signed.
+  if( c <= ' ' ) // Includes CR, LF, tab, etc.
+    continue;
+
+  if( c >= boolAlphaSize )
+    continue;
+
+  // If it's not in the character set or padC.
+  if( !boolAlpha.getVal( c ))
+    continue;
+
+  outBuf.appendChar( c, 1024 );
+  // StIO::putChar( c );
+  }
+
+// StIO::putChar( '\n' );
 }

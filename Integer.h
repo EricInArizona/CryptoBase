@@ -23,7 +23,7 @@
 class Integer
   {
   private:
-  Int32 testforCopy = 123;
+  bool testforCopy = false;
   bool negative = false;
   Int32 index = 0;
 

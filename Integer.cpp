@@ -25,7 +25,7 @@ setToZero();
 Integer::Integer( const Integer& in )
 {
 // Make the compiler think in is being used.
-if( in.testforCopy == 7 )
+if( in.testforCopy )
   return;
 
 throw "Don't use the Integer copy constructor.";

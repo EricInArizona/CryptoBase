@@ -12,15 +12,19 @@
 #include "../CryptoBase/Integer64.h"
 
 
+
 class Integer128
   {
   private:
   bool testForCopy = false;
+
+/*
   // bool negative = false;
   Integer64 baseL;
   Integer64 baseH;
   Integer64 carryL;
   Integer64 carryH;
+*/
 
   public:
   inline Integer128( void )
@@ -30,40 +34,15 @@ class Integer128
   inline Integer128( const Integer128& in )
     {
     if( in.testForCopy )
-      throw "Integer128 copy constructor.";
+      return;
 
+    throw "Integer128 copy constructor.";
     }
 
   inline ~Integer128( void )
     {
     }
 
-
-  inline void cleanCarrys( void )
-    {
-    Integer64 movePart;
-
-    movePart.copy( baseL );
-    baseL.setBase( movePart );
-
-    movePart.shiftRAll();
-    movePart.accumAll( baseH );
-    baseH.setBase( movePart );
-
-    movePart.shiftRAll();
-    movePart.accumAll( carryL );
-    carryL.setBase( movePart );
-
-    movePart.shiftRAll();
-    movePart.accumAll( carryH );
-    carryH.setBase( movePart );
-
-    movePart.shiftRAll();
-    if( !movePart.isZero())
-      throw "Overflow in cleanCarrys.";
-
-    }
-
-
+  void cleanCarry( void );
 
   };

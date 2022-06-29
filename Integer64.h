@@ -9,29 +9,38 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "../CryptoBase/Integer32.h"
+
 
 
 class Integer64
   {
   private:
   bool testForCopy = false;
-  // bool negative = false;
-  Integer32 baseL;
-  Integer32 baseH;
-  Integer32 carryL;
-  Integer32 carryH;
+  bool negative = false;
+  // It is the normal behavior of unsigned
+  // integers to overflow with no exception
+  // or warning.  It is mod 2^32.
+
+  // This is always 8.  What changes is the
+  // size of the D values.
+  static const Int32 digitArSize = 8;
+
+  U32Array D;
+  Int32 index = 0;
 
   public:
   inline Integer64( void )
     {
+    D.setSize( digitArSize );
+    setZero();
     }
 
   inline Integer64( const Integer64& in )
     {
     if( in.testForCopy )
-      throw "Integer64 copy constructor.";
+      return;
 
+    throw "Integer64 copy constructor.";
     }
 
   inline ~Integer64( void )
@@ -39,149 +48,104 @@ class Integer64
     }
 
 
-
   inline void setZero( void )
     {
-    baseL.setZero();
-    baseH.setZero();
+    negative = false;
+    index = 0;
+    D[0] = 0;
+    }
+
+  inline void setOne( void )
+    {
+    negative = false;
+    index = 0;
+    D[0] = 1;
     }
 
   inline bool isZero( void ) const
     {
-    if( baseL.isZero() && baseH.isZero() )
-      return true;
+    if( index != 0 )
+      return false;
 
-    return false;
+    if( D[0] != 0 )
+      return false;
+
+    if( negative )
+      throw "Integer64 Zero is negative.";
+
+    return true;
     }
 
-
-  inline void cleanCarrys( void )
+  inline bool isOne( void ) const
     {
-    Integer32 movePart;
+    if( negative )
+      return false;
 
-    movePart.copy( baseL );
-    baseL.setBase( movePart );
+    if( index != 0 )
+      return false;
 
-    movePart.shiftRAll();
-    movePart.accumAll( baseH );
-    baseH.setBase( movePart );
+    if( D[0] != 1 )
+      return false;
 
-    movePart.shiftRAll();
-    movePart.accumAll( carryL );
-    carryL.setBase( movePart );
-
-    movePart.shiftRAll();
-    movePart.accumAll( carryH );
-    carryH.setBase( movePart );
-
-    movePart.shiftRAll();
-    if( !movePart.isZero())
-      throw "Overflow in cleanCarrys.";
-
+    return true;
     }
 
-
-  inline void add( const Integer64& x,
-                   const Integer64& y )
+  inline bool isNegOne( void ) const
     {
-    // For testing:
-    if( !x.carryL.isZero() )
-      throw "64 carry add not zero.";
+    if( !negative )
+      return false;
 
-    if( !y.carryL.isZero() )
-      throw "64 carry add not zero.";
+    if( index != 0 )
+      return false;
 
-    baseL.add( x.baseL, y.baseL );
-    baseH.add( x.baseH, y.baseH );
+    if( D[0] != 1 )
+      return false;
 
-    cleanCarrys();
+    return true;
     }
 
 
-  inline void mult( const Integer64& x,
-                    const Integer64& y )
+  inline bool getNegative( void ) const
     {
-    Integer32 lowPart;
-    Integer32 highPart;
-    Integer32 mid1;
-    Integer32 mid1L;
-    Integer32 mid1H;
-    Integer32 mid2;
-    Integer32 mid2L;
-    Integer32 mid2H;
-
-    if( x.baseL.isZero() || y.baseL.isZero())
-      lowPart.setZero();
-    else
-      lowPart.mult( x.baseL, y.baseL );
-
-// ======
-    mid1.mult( x.baseH, y.baseL );
-    mid2.mult( x.baseL, y.baseH );
-    highPart.mult( x.baseH, y.baseH );
-
-    mid1L.setBase( mid1 );
-    mid1H.copy( mid1 );
-    mid1H.shiftRAll();
-
-    mid2L.setBase( mid2 );
-    mid2H.copy( mid2 );
-    mid2H.shiftRAll();
-
-    baseL.setBase( lowPart );
-
-    lowPart.shiftRAll();
-    baseH.setBase( lowPart );
-    baseH.accumAll( mid1L );
-    baseH.accumAll( mid2L );
-
-    carryL.setBase( highPart );
-    carryL.accumAll( mid1H );
-    carryL.accumAll( mid2H );
-
-    highPart.shiftRAll();
-    carryH.setBase( highPart );
-
-    cleanCarrys();
+    return negative;
     }
 
-
-  inline void shiftRAll( void )
+  inline bool isULong( void ) const
     {
-    baseL.setBase( carryL );
-    baseH.setBase( carryH );
-    carryL.setZero();
-    carryH.setZero();
+    if( negative )
+      return false;
+
+    if( index > 3 )
+      return false;
+
+    return true;
     }
 
-
-  inline void copy( Integer64& in )
+  inline Uint64 getAsULong( void ) const
     {
-    baseL.copy( in.baseL );
-    baseH.copy( in.baseH );
-    carryL.copy( in.carryL );
-    carryH.copy( in.carryH );
+    // Assumes the caller has alredy checked
+    // to see with isULong().
+    if( index > 3 )
+      throw "getAsULong() too long.";
+
+    Uint64 result = D[3];
+    result <<= 16;
+    result |= D[2];
+    result <<= 16;
+    result |= D[1];
+    result <<= 16;
+    result |= D[0];
+
+    return result;
     }
 
-  inline void setBase( const Integer64& x )
-    {
-    baseL.copy( x.baseL );
-    baseH.copy( x.baseH );
-    carryL.setZero();
-    carryH.setZero();
-    }
+  void setFromULong( const Uint64 toSet );
+  void addULong( const Uint64 toAdd );
+  void cleanCarry( void );
+  void add( const Integer64& toAdd );
+  void copy( const Integer64& from );
+  void copyLow( const Integer64& from );
+  void copyHigh( const Integer64& from );
 
-
-  inline void accumAll( const Integer64& x )
-    {
-    // Carry can be non zero here.
-
-    baseL.accumAll( x.baseL );
-    baseH.accumAll( x.baseH );
-    carryL.accumAll( x.carryL );
-    carryH.accumAll( x.carryH );
-
-    cleanCarrys();
-    }
 
   };
