@@ -64,6 +64,33 @@ class Integer56
     N4 = 0;
     }
 
+  inline Uint64 getMod64( Uint64 x )
+    {
+    if( (N2 != 0) ||
+        (N3 != 0) ||
+        (N4 != 0) )
+      throw "Integer56 getMod64.";
+
+    Uint64 result = N1;
+    result <<= 28;
+    result |= N0;
+
+    result = result % x;
+    return result;
+    }
+
+  inline Uint64 getAsULong( void )
+    {
+    Uint64 result = N2;
+    result <<= 28;
+    result |= N1;
+    result <<= 28;
+    result |= N0;
+
+    return result;
+    }
+
+
   inline void setFromULong( const Uint64 toSet )
     {
     N0 = toSet & bitMask28;

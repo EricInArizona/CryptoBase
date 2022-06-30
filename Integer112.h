@@ -206,6 +206,24 @@ class Integer112
     N3.clearHighPart();
     }
 
+/*
+  inline Uint64 getMod64( Uint64 x )
+    {
+    if( (!N2.isZero()) ||
+        (!N3.isZero()) ||
+        (!N4.isZero()) )
+      throw "Integer112 getMod64.";
+
+    Uint64 smallPart = N0.getAsULong() % x;
+    Uint64 basePart = 0xFFF FFFF FFF FFFFULL % x;
+    Uint64 bigPart = N1.getAsULong() % x;
+
+Add these up mod x.
+
+    result = result % x;
+    return result;
+    }
+*/
 
 
 /*

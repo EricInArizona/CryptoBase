@@ -19,11 +19,11 @@ class Asn1
 
   // Algorithms and Identifiers for RSA
   // Cryptography for use in the Internet X.509
-  // Public Key Infrastructure Certificate and 
+  // Public Key Infrastructure Certificate and
   // Certificate Revocation List (CRL)
   // Profile  RFC4055
 
-  // id-sha256  OBJECT IDENTIFIER  ::= 
+  // id-sha256  OBJECT IDENTIFIER  ::=
   //       { joint-iso-itu-t(2)
   //        country(16) us(840) organization(1)
   //   gov(101)
@@ -36,5 +36,3 @@ class Asn1
 
 
   };
-
-
