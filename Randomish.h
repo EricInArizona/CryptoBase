@@ -29,7 +29,7 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "../CppBase/Uint16Array.h"
+#include "../CppBase/CharBuf.h"
 
 
 class Randomish
@@ -37,7 +37,7 @@ class Randomish
   private:
 
   public:
-  static void makeRandomBytes( Uint16Array& uArray,
+  static void makeRandomBytes( CharBuf& cBuf,
                              const Int32 howMany );
 
   };

@@ -662,31 +662,22 @@ if( setToIndex > (ProjConst::digitArraySize - 3))
 
 Int32 howManyBytes = (setToIndex * 3) + 3;
 
-Uint16Array cArray;
-Randomish::makeRandomBytes( cArray,
-                            howManyBytes );
+CharBuf cBuf;
+Randomish::makeRandomBytes( cBuf,
+                            howManyBytes * 2 );
 
 index = setToIndex;
 Int32 where = 0;
 for( Int32 count = 0; count <= setToIndex;
                                         count++ )
   {
-  Int64 digit = Casting::U16ToI32(
-                           cArray.getVal( where ));
-  // Test that it is getting that top bit
-  // in the byte in some of them.
-  // if( (digit & 0x80) != 0 )
-    // throw "Yes, it got the bit.";
-
-  digit <<= 8;
-  digit |= Casting::U16ToI32(
-                     cArray.getVal( where + 1 ));
-  digit <<= 8;
-  digit |= Casting::U16ToI32(
-                     cArray.getVal( where + 2 ));
+  Uint32 rand32 = cBuf.getU32( where );
+  // It's 24 bits per digit.
+  rand32 = rand32 & 0xFFFFFF;
+  Int64 digit = Casting::u64ToI32( rand32 );
 
   D[count] = digit;
-  where += 3;
+  where += 4;
   }
 
 // Make sure there isn't a zero at the top.

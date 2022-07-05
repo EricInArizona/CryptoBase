@@ -21,7 +21,7 @@
 
 
 void Randomish::makeRandomBytes(
-                            Uint16Array& uArray,
+                            CharBuf& cBuf,
                             const Int32 howMany )
 {
 // This is pretty crude at this point.
@@ -47,17 +47,15 @@ for( Int32 count = 0; count < 100000; count++ )
   {
   // dist( gen())
 
-  // Truncate the unsigned int to an 8 bit byte.
-  Uint16 c = Casting::
-                U64ToU16ByteTruncate( gen());
+  Uint32 rBytes = gen();
 
   // Use non zero bytes.
-  if( c == 0 )
+  if( rBytes == 0 )
     continue;
 
-  uArray.setVal( where, c );
-  where++;
-  if( where >= howMany )
+  cBuf.appendU32( rBytes, 1024 );
+  where += 4;
+  if( where > howMany )
     return;
 
   }

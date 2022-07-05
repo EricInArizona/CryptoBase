@@ -11,7 +11,7 @@
 #include "Base64.h"
 #include "../CppBase/FileIO.h"
 #include "../CppBase/StIO.h"
-#include "../CppBase/MathC.h"
+#include "../Math/MathC.h"
 
 
 Int32 Base64::lettersToBits( CharBuf& outBuf,
