@@ -124,7 +124,7 @@ if( lastIn == 0 )
 
 double ratio = 3.0 / 4.0;
 double sizeDbl = ratio * lastIn;
-Int32 outSize = MathC::round32( sizeDbl );
+Int32 outSize = MathC::roundI32( sizeDbl );
 outSize += 1024;
 outBuf.setSize( outSize );
 
@@ -172,7 +172,7 @@ if( lastIn == 0 )
 
 double ratio = 4.0 / 3.0;
 double sizeDbl = ratio * lastIn;
-Int32 outSize = MathC::round32( sizeDbl );
+Int32 outSize = MathC::roundI32( sizeDbl );
 outSize += 1024;
 outBuf.setSize( outSize );
 
