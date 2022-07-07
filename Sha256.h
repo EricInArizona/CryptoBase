@@ -8,10 +8,6 @@
 
 
 
-// Make it work first, then make it work fast.
-
-
-
 // RFC 6234 -
 // US Secure Hash Algorithms (SHA and
 // SHA-based HMAC and HKDF)

@@ -12,7 +12,6 @@
 #include "../CppBase/Casting.h"
 
 
-// Get this source code.
 #include <random>
 
 
@@ -49,8 +48,23 @@ for( Int32 count = 0; count < 100000; count++ )
 
   Uint32 rBytes = gen();
 
+  // What if you know for sure that a random
+  // prime number used in RSA never goes for
+  // longer than 8 bits before you see a one?
+  // Not more than 7 zeros in a row?
+  // Fix this.
+
   // Use non zero bytes.
-  if( rBytes == 0 )
+  if( (rBytes >> 3) == 0 )
+    continue;
+
+  if( ((rBytes >> 2) & 0xFF) == 0 )
+    continue;
+
+  if( ((rBytes >> 1) & 0xFF) == 0 )
+    continue;
+
+  if( (rBytes & 0xFF) == 0 )
     continue;
 
   cBuf.appendU32( rBytes, 1024 );

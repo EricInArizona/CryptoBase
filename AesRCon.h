@@ -14,14 +14,11 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "../CppBase/RangeC.h"
 
 
 class AesRCon
   {
   private:
-
-  // Only the first few of these are actually used.
   // Round Constant Array.
 
   static constexpr Uint8 RCon[256] =
@@ -45,8 +42,11 @@ class AesRCon
     };
 
   public:
-  inline Uint8 getV( const Uint8 where ) const
+  inline Uint8 getV( const Int32 where ) const
     {
+    RangeC::test2( where, 0, 255,
+       "AesRCon.getV() range for where." );
+
     return RCon[where];
     }
 

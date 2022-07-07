@@ -17,11 +17,12 @@
 // to test an algorithm.
 
 // I'm not writing a long and in-depth book
-// on randomness just yet.  I'll do that when
-// I have a few years to set aside for that
-// task.
+// on randomness just yet.
 // The more complex something is, the more
-// random it looks.  Is the Universe just a
+// random it looks.  The generated key used in
+// TLS is complex. SHA 256 makes a random looking
+// series of bytes.
+// Is the Universe just a
 // series of meaningless random events?
 // Or is it complex?
 // I won't be answering that question any

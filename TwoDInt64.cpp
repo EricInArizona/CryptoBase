@@ -1,5 +1,4 @@
 // Copyright Eric Chauvin 2021 - 2022.
-// This copyright notice has to stay at the top.
 
 
 // This is licensed under the GNU General
@@ -7,6 +6,11 @@
 // same license that Linux has.
 // https://www.gnu.org/licenses/gpl-3.0.html
 
+
+// This will eventually be obsolete when I finish
+// making the new Integers.
+// Column, row instead of row, column was for
+// compatibility with old code.
 
 
 #include "TwoDInt64.h"

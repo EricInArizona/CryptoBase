@@ -12,46 +12,115 @@
 #include "Aes.h"
 
 
-// Translating from my old C# code.
 
+// This is only partially done.
+// Still translating from my old C# code.
 
 
 /*
 
-
-
-    // This key is from the FIPS document
-    // Appendix A - Key Expansion Examples.
-    ///////////
-    // Key for the Key Expansion example:
-    byte[] Key = new byte[KeyLengthInBytes]
+    // InBlock plain text for the test vector example in Appendix C.3.
+    // PLAINTEXT: 00112233445566778899aabbccddeeff
+    byte[] TestBlock = new byte[16]
       {
-      0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe,
-      0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
-      0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7,
-      0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4
-      };
-      ////////
-
-    // Key for the test vector example in Appendix C.3.
-    byte[] Key = new byte[KeyLengthInBytes]
-      {
-      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-      0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
-      0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
-      0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+      0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+      0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
       };
 
+    byte[] OutBlock = new byte[16];
+    byte[] PlainBlock = new byte[16];
+    byte[] PreviousBlock = new byte[16];
+*/
 
-    // First four bytes of the key: 0x60, 0x3d, 0xeb, 0x10.
-    // Expressed as a 32 bit word:
-    // w0 = 603deb10
 
-    // The key schedule generates Nb(Nr + 1) words.
-    // That is 4 times 15 words.
-    uint[] KeyScheduleWords = new uint[4 * (NumberOfRounds + 1)];
-    byte[,] KeyScheduleBytes = new byte[4, 4 * (NumberOfRounds + 1)];
 
+
+void Aes::keyExpansion( void )
+{
+// For the 256 bit keys.
+// 8 = AesConst::KeyLengthInBytes256 / 4
+
+for( Int32 count = 0; count < 8; count++ )
+  {
+  // The four bytes: 0x60, 0x3d, 0xeb, 0x10,
+  // become the uint: w0 = 603deb10
+  Uint32 theWord = makeUintFromBytes(
+                  aesKey.getV( 4 * count ),
+                  aesKey.getV( (4 * count) + 1 ),
+                  aesKey.getV( (4 * count) + 2 ),
+                  aesKey.getV( (4 * count) + 3 ));
+
+  aesKeyWords.setV( count, theWord );
+  }
+
+// First four bytes of the key: 0x60, 0x3d,
+// 0xeb, 0x10.
+// w0 = 603deb10
+
+// 8 = AesConst::KeyLengthInBytes256 / 4
+
+for( Int32 count = 8;
+                count < AesConst::KeyWordsSize;
+                count++ )
+  {
+  Uint32 temp = aesKeyWords.getV( count - 1 );
+
+  // if( (count % 8) == 0)
+  if( (count & 0x07) == 0)
+    {
+    // See Appendix A.3 Expansion of a
+    // 256-bit Cipher Key.
+    temp = rotateWord( temp );
+    temp = subWord( temp );
+    Uint32 rConVal = aesRCon.getV( count / 8 );
+
+    rConVal <<= 24;
+    temp = temp ^ rConVal;
+    }
+
+  // if( (Count % 8) == 4)
+  // else if( 8 > 6 and i mod Nk = 4)
+  if( (count & 0x07) == 4)
+    {
+    temp = subWord( temp );
+    }
+
+  Uint32 prevWord = aesKeyWords.getV( count - 8 );
+  aesKeyWords.setV( count, prevWord ^ temp );
+  }
+
+moveKeyScheduleWordsToBytes();
+}
+
+
+
+void Aes::moveKeyScheduleWordsToBytes( void )
+{
+for( Int32 count = 0; count < 
+                 AesConst::KeyWordsSize; count++ )
+  {
+  Uint32 aWord = aesKeyWords.getV( count );
+
+  // Column-major order.
+  // Row, Column
+  Uint8 theByte = (aWord >> 24) & 0xFF; 
+  aesKeyBytes.setV( 0, count, theByte );
+
+  theByte = (aWord >> 16) & 0xFF;
+  aesKeyBytes.setV( 1, count, theByte );
+
+  theByte = (aWord >> 8) & 0xFF;
+  aesKeyBytes.setV( 2, count, theByte );
+
+  theByte = aWord & 0xFF;
+  aesKeyBytes.setV( 3, count, theByte );
+  }
+}
+
+
+
+
+/*
 
     // InBlock plain text for the test vector example in Appendix C.3.
     // PLAINTEXT: 00112233445566778899aabbccddeeff
@@ -68,152 +137,11 @@
 
 
 
-
-
-  private void MoveStateToOutBlock( byte[] OutBlock )
-    {
-    // StateArray[Row, Column]
-    OutBlock[0] = StateArray[0, 0];
-    OutBlock[1] = StateArray[1, 0];
-    OutBlock[2] = StateArray[2, 0];
-    OutBlock[3] = StateArray[3, 0];
-    OutBlock[4] = StateArray[0, 1];
-    OutBlock[5] = StateArray[1, 1];
-    OutBlock[6] = StateArray[2, 1];
-    OutBlock[7] = StateArray[3, 1];
-    OutBlock[8] = StateArray[0, 2];
-    OutBlock[9] = StateArray[1, 2];
-    OutBlock[10] = StateArray[2, 2];
-    OutBlock[11] = StateArray[3, 2];
-    OutBlock[12] = StateArray[0, 3];
-    OutBlock[13] = StateArray[1, 3];
-    OutBlock[14] = StateArray[2, 3];
-    OutBlock[15] = StateArray[3, 3];
-    }
-
-
-
-
-  private uint MakeUintFromBytes( byte Byte0, byte Byte1, byte Byte2, byte Byte3 )
-    {
-    // A uint (32 bit word) corresponds to one column in a
-    // column-major-order matrix.
-    // See the MoveInBlockToState() function  for more comments
-    // on why it's in this order.
-
-    // Appendix A - Key Expansion Examples.
-    // Also see section 3.5.
-    uint Result = Byte0;
-    Result <<= 8;
-    Result |= Byte1;
-    Result <<= 8;
-    Result |= Byte2;
-    Result <<= 8;
-    Result |= Byte3;
-
-    return Result;
-    }
-
-
-
-
-  internal void KeyExpansion()
-    {
-    // int RConTest = Rcon[0];
-    // ShowStatus( "RConTest 0: " + RConTest.ToString()); //  "X8" ));
-    for( int Count = 0; Count < 8; Count++ )
-      {
-      // The four bytes: 0x60, 0x3d, 0xeb, 0x10,
-      // Become the uint: w0 = 603deb10
-      KeyScheduleWords[Count] = MakeUintFromBytes( Key[4 * Count], Key[(4 * Count) + 1], Key[(4 * Count) + 2], Key[(4 * Count) + 3] );
-      // int SignedInt = (int)KeyScheduleWords[Count];
-      // ShowStatus( Count.ToString() + ") " + SignedInt.ToString()); //  "X8" ));
-      }
-
-    // First four bytes of the key: 0x60, 0x3d, 0xeb, 0x10.
-    // w0 = 603deb10
-    // w1 = 15ca71be
-    // w2 = 2b73aef0
-    // w3 = 857d7781
-    // w4 = 1f352c07
-    // w5 = 3b6108d7
-    // w6 = 2d9810a3
-    // w7 = 0914dff4
-
-    for( int Count = 8; Count < (4 * (14 + 1)); Count++ )
-      {
-      uint Temp = KeyScheduleWords[Count - 1];
-      // ShowStatus( "Temp: " + Temp.ToString( "X8" ));
-
-      // Mod 8 is the same as AND 0x07 (to leave the bottom 3 bits)
-      // but the AND is a lot faster.
-      // if( (Count % 8) == 0)
-      if( (Count & 0x07) == 0)
-        {
-        // See Appendix A.3 Expansion of a 256-bit Cipher Key.
-        // int SignedInt4 = (int)Temp;
-        // ShowStatus( "Temp before Rotate: " + SignedInt4.ToString());
-        Temp = RotateWord( Temp );
-        // int SignedInt4 = (int)Temp;
-        // ShowStatus( "Temp after Rotate: " + SignedInt4.ToString());
-        Temp = SubWord( Temp );
-        // SignedInt4 = (int)Temp;
-        // ShowStatus( "Temp after SubWord: " + SignedInt4.ToString());
-        uint RConVal = Rcon[Count / 8];
-
-        RConVal <<= 24; // The zero byte is on the left side of the word.  Hmmm.
-        // SignedInt4 = (int)RConVal;
-        // ShowStatus( "RConVal: " + SignedInt4.ToString());
-
-        Temp = Temp ^ RConVal;
-        // int SignedInt = (int)Temp;
-        // ShowStatus( "Temp after Rcon: " + SignedInt.ToString());
-        }
-
-      // if( (Count % 8) == 4) // else if( 8 > 6 and i mod Nk = 4)
-      if( (Count & 0x07) == 4)
-        {
-        Temp = SubWord( Temp );
-        // ShowStatus( "Temp after Subword part 2: " + Temp.ToString( "X8" ));
-        // int SignedInt3 = (int)Temp;
-        // ShowStatus( "Temp after SubWord: " + SignedInt3.ToString());
-        }
-
-      KeyScheduleWords[Count] = KeyScheduleWords[Count - 8] ^ Temp;
-      // ShowStatus( Count.ToString() + ") " + KeyScheduleWords[Count].ToString( "X8" ));
-      // int SignedInt2 = (int)KeyScheduleWords[Count];
-      // ShowStatus( Count.ToString() + ") " + SignedInt2.ToString()); //  "X8" ));
-      }
-
-    MoveKeyScheduleWordsToBytes();
-    }
-
-
-
-
-  private void MoveKeyScheduleWordsToBytes()
-    {
-    for( int Count = 0; Count < KeyScheduleWords.Length; Count++ )
-      {
-      uint AWord = KeyScheduleWords[Count];
-
-      // Column-major order.
-      // Compare this to what's in MoveInBlockToState().
-      //               Row, Column
-      KeyScheduleBytes[0, Count] = (byte)((AWord >> 24) & 0xFF);
-      KeyScheduleBytes[1, Count] = (byte)((AWord >> 16) & 0xFF);
-      KeyScheduleBytes[2, Count] = (byte)((AWord >> 8) & 0xFF);
-      KeyScheduleBytes[3, Count] = (byte)(AWord & 0xFF);
-      }
-    }
-
-
-
-
   private void AddRoundKey( int Round )
     {
     // StateArray[Row, Column]
-    StateArray[0, 0] = (byte)(StateArray[0, 0] ^ KeyScheduleBytes[0, Round * 4]);
+    StateArray[0, 0] = (byte)(StateArray[0, 0] ^
+                 KeyScheduleBytes[0, Round * 4]);
     StateArray[1, 0] = (byte)(StateArray[1, 0] ^ KeyScheduleBytes[1, Round * 4]);
     StateArray[2, 0] = (byte)(StateArray[2, 0] ^ KeyScheduleBytes[2, Round * 4]);
     StateArray[3, 0] = (byte)(StateArray[3, 0] ^ KeyScheduleBytes[3, Round * 4]);
@@ -845,4 +773,28 @@
 
   }
 }
+
+    // This key is from the FIPS document
+    // Appendix A - Key Expansion Examples.
+    ///////////
+    // Key for the Key Expansion example:
+    // byte[] Key = new byte[KeyLengthInBytes]
+    //  {
+    //  0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe,
+    //  0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
+    //  0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7,
+    //  0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4
+    //  };
+      ////////
+
+    // Key for the test vector example in Appendix C.3.
+    // byte[] Key = new byte[KeyLengthInBytes]
+     // {
+     // 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+     // 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+     // 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+     // 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+     // };
+
+
 */

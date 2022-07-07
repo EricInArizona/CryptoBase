@@ -15,14 +15,24 @@
 
 #pragma once
 
+// It should have a different Initialization
+// Vector each time.
+// unlike GG.
+// Galois counter mode?
+
 
 #include "../CppBase/BasicTypes.h"
 #include "../CppBase/TimeApi.h"
 #include "../CppBase/Casting.h"
+
+#include "AesConst.h"
 #include "AesState.h"
 #include "AesSBox.h"
 #include "AesBlock.h"
 #include "AesRCon.h"
+#include "AesKeyWords.h"
+#include "AesKeyBytes.h"
+#include "AesKey.h"
 
 
 // Key sizes 128, 192, 256.
@@ -35,12 +45,14 @@ class Aes
   bool testForCopy = false;
   AesState aesState;
   AesSBox aesSBox;
-  // AesRCon aesRCon;
+  AesRCon aesRCon;
+  AesKey aesKey;
+  AesKeyWords aesKeyWords;
+  AesKeyBytes aesKeyBytes;
+
   // AesBlock& tempBlock;
 
 
-  // 14 rounds for a 256 bit key.
-  // static const Int32 NumberOfRounds = 14;
   // static const Int32 KeyLengthInBytes = 32; // 256 / 8
   // static const Int32 Const0 = 0;
   // static const Int32 Const1 = 1;
@@ -82,6 +94,30 @@ class Aes
     }
 
 
+  inline static Uint32 makeUintFromBytes(
+                          const Uint8 byte0,
+                          const Uint8 byte1,
+                          const Uint8 byte2,
+                          const Uint8 byte3 )
+    {
+    // A Uint32  corresponds to one column in a
+    // column-major-order matrix.
+
+    // Appendix A - Key Expansion Examples.
+    // Also see section 3.5.
+
+    Uint32 result = byte0;
+    result <<= 8;
+    result |= byte1;
+    result <<= 8;
+    result |= byte2;
+    result <<= 8;
+    result |= byte3;
+
+    return result;
+    }
+
+  void keyExpansion( void );
 
   inline void moveBlockToState(
                            const AesBlock& block )
@@ -121,7 +157,6 @@ class Aes
     }
 
 
-
   inline void moveStateToBlock( AesBlock& block )
     {
     block.setV( 0, aesState.getV( 0, 0 ));
@@ -141,6 +176,8 @@ class Aes
     block.setV( 14, aesState.getV( 2, 3 ));
     block.setV( 15, aesState.getV( 3, 3 ));
     }
+
+  void moveKeyScheduleWordsToBytes( void );
 
 
   public:

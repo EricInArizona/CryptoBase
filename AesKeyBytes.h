@@ -14,42 +14,17 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "../CppBase/RangeC.h"
+#include "AesConst.h"
 
 
-// This corresponds to a 128 bit block.
-// 16 times 8 bits.
-// AES has a fixed block size of 128 bits.
-// State as in "state machine".
-
-
-class AesState
+class AesKeyBytes
   {
   private:
-  bool testForCopy = false;
-  Uint8 aR[16] = { 1, 2, 3 };
-
+  // bool testForCopy = false;
+  Uint8 keyScheduleBytes[AesConst::KeyBytesSize] =
+                                  { 1, 2, 3 };
 
   public:
-  inline AesState( void )
-    {
-
-    }
-
-  inline AesState( const AesState& in )
-    {
-    if( in.testForCopy )
-      return;
-
-    throw "Copy constructor for AesState.";
-    }
-
-  inline ~AesState( void )
-    {
-
-    }
-
-
   inline Uint8 getV( const Int32 row,
                      const Int32 column ) const
     {
@@ -59,10 +34,11 @@ class AesState
     const Int32 where = (row * 4) + column;
 
     // This range checking can be commented out.
-    RangeC::test2( where, 0, 15,
-       "AesState.getV() range for where." );
+    RangeC::test2( where, 0,
+                   AesConst::KeyBytesSize,
+       "AesKeyBytes.getV() range for where." );
 
-    return aR[where];
+    return keyScheduleBytes[where];
     }
 
   inline void setV( const Int32 row,
@@ -71,11 +47,10 @@ class AesState
     {
     const Int32 where = (row * 4) + column;
 
-    RangeC::test2( where, 0, 15,
-       "AesState.setV() range for where." );
+    RangeC::test2( where, 0, AesConst::KeyBytesSize,
+       "AesKeyBytes.setV() range for where." );
 
-    aR[where] = val;
+    keyScheduleBytes[where] = val;
     }
-
 
   };
