@@ -14,7 +14,10 @@
 
 
 // This is only partially done.
-// Still translating from my old C# code.
+// I'm still translating from my old C# code.
+// After I translate it from my C# code I have
+// to check it against the specs and the test
+// vectors.
 
 
 /*
@@ -30,6 +33,7 @@
     byte[] OutBlock = new byte[16];
     byte[] PlainBlock = new byte[16];
     byte[] PreviousBlock = new byte[16];
+
 */
 
 
@@ -96,14 +100,13 @@ moveKeyScheduleWordsToBytes();
 
 void Aes::moveKeyScheduleWordsToBytes( void )
 {
-for( Int32 count = 0; count < 
+for( Int32 count = 0; count <
                  AesConst::KeyWordsSize; count++ )
   {
   Uint32 aWord = aesKeyWords.getV( count );
 
-  // Column-major order.
   // Row, Column
-  Uint8 theByte = (aWord >> 24) & 0xFF; 
+  Uint8 theByte = (aWord >> 24) & 0xFF;
   aesKeyBytes.setV( 0, count, theByte );
 
   theByte = (aWord >> 16) & 0xFF;
@@ -118,117 +121,121 @@ for( Int32 count = 0; count <
 }
 
 
+void Aes::addRoundKey( Int32 round )
+{
+// StateArray[Row, Column]
+Uint8 newByte = aesState.getV( 0, 0 ) ^
+                 aesKeyBytes.getV( 0, round * 4 );
+aesState.setV( 0, 0, newByte );
+
+newByte = aesState.getV( 1, 0 ) ^
+                 aesKeyBytes.getV( 1, round * 4 );
+aesState.setV( 1, 0, newByte );
+
+newByte = aesState.getV( 2, 0 ) ^
+                 aesKeyBytes.getV( 2, round * 4 );
+aesState.setV( 2, 0, newByte );
+
+newByte = aesState.getV( 3, 0 ) ^
+                 aesKeyBytes.getV( 3, round * 4 );
+aesState.setV( 3, 0, newByte );
+
+
+newByte = aesState.getV( 0, 1 ) ^
+           aesKeyBytes.getV( 0, (round * 4) + 1 );
+aesState.setV( 0, 1, newByte );
+
+newByte = aesState.getV( 1, 1 ) ^
+           aesKeyBytes.getV( 1, (round * 4) + 1 );
+aesState.setV( 1, 1, newByte );
+
+newByte = aesState.getV( 2, 1 ) ^
+           aesKeyBytes.getV( 2, (round * 4) + 1 );
+aesState.setV( 2, 1, newByte );
+
+newByte = aesState.getV( 3, 1 ) ^
+           aesKeyBytes.getV( 3, (round * 4) + 1 );
+aesState.setV( 3, 1, newByte );
+
+
+newByte = aesState.getV( 0, 2 ) ^
+           aesKeyBytes.getV( 0, (round * 4) + 2 );
+aesState.setV( 0, 2, newByte );
+
+newByte = aesState.getV( 1, 2 ) ^
+           aesKeyBytes.getV( 1, (round * 4) + 2 );
+aesState.setV( 1, 2, newByte );
+
+newByte = aesState.getV( 2, 2 ) ^
+           aesKeyBytes.getV( 2, (round * 4) + 2 );
+aesState.setV( 2, 2, newByte );
+
+newByte = aesState.getV( 3, 2 ) ^
+           aesKeyBytes.getV( 3, (round * 4) + 2 );
+aesState.setV( 3, 2, newByte );
+
+
+newByte = aesState.getV( 0, 3 ) ^
+           aesKeyBytes.getV( 0, (round * 4) + 3 );
+aesState.setV( 0, 3, newByte );
+
+newByte = aesState.getV( 1, 3 ) ^
+           aesKeyBytes.getV( 1, (round * 4) + 3 );
+aesState.setV( 1, 3, newByte );
+
+newByte = aesState.getV( 2, 3 ) ^
+           aesKeyBytes.getV( 2, (round * 4) + 3 );
+aesState.setV( 2, 3, newByte );
+
+newByte = aesState.getV( 3, 3 ) ^
+           aesKeyBytes.getV( 3, (round * 4) + 3 );
+aesState.setV( 3, 3, newByte );
+}
+
+
+
+void Aes::subBytes( void )
+{
+aesState.setV( 0, 0, subByte(
+                     aesState.getV( 0, 0 )));
+aesState.setV( 1, 0, subByte(
+                     aesState.getV( 1, 0 )));
+aesState.setV( 2, 0, subByte(
+                     aesState.getV( 2, 0 )));
+aesState.setV( 3, 0, subByte(
+                     aesState.getV( 3, 0 )));
+
+aesState.setV( 0, 1, subByte(
+                     aesState.getV( 0, 1 )));
+aesState.setV( 1, 1, subByte(
+                     aesState.getV( 1, 1 )));
+aesState.setV( 2, 1, subByte(
+                     aesState.getV( 2, 1 )));
+aesState.setV( 3, 1, subByte(
+                     aesState.getV( 3, 1 )));
+
+aesState.setV( 0, 2, subByte(
+                     aesState.getV( 0, 2 )));
+aesState.setV( 1, 2, subByte(
+                     aesState.getV( 1, 2 )));
+aesState.setV( 2, 2, subByte(
+                     aesState.getV( 2, 2 )));
+aesState.setV( 3, 2, subByte(
+                     aesState.getV( 3, 2 )));
+
+aesState.setV( 0, 3, subByte(
+                     aesState.getV( 0, 3 )));
+aesState.setV( 1, 3, subByte(
+                     aesState.getV( 1, 3 )));
+aesState.setV( 2, 3, subByte(
+                     aesState.getV( 2, 3 )));
+aesState.setV( 3, 3, subByte(
+                     aesState.getV( 3, 3 )));
+}
+
 
 
 /*
-
-    // InBlock plain text for the test vector example in Appendix C.3.
-    // PLAINTEXT: 00112233445566778899aabbccddeeff
-    byte[] TestBlock = new byte[16]
-      {
-      0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
-      0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
-      };
-
-    byte[] OutBlock = new byte[16];
-    byte[] PlainBlock = new byte[16];
-    byte[] PreviousBlock = new byte[16];
-
-
-
-
-  private void AddRoundKey( int Round )
-    {
-    // StateArray[Row, Column]
-    StateArray[0, 0] = (byte)(StateArray[0, 0] ^
-                 KeyScheduleBytes[0, Round * 4]);
-    StateArray[1, 0] = (byte)(StateArray[1, 0] ^ KeyScheduleBytes[1, Round * 4]);
-    StateArray[2, 0] = (byte)(StateArray[2, 0] ^ KeyScheduleBytes[2, Round * 4]);
-    StateArray[3, 0] = (byte)(StateArray[3, 0] ^ KeyScheduleBytes[3, Round * 4]);
-
-    StateArray[0, 1] = (byte)(StateArray[0, 1] ^ KeyScheduleBytes[0, (Round * 4) + 1]);
-    StateArray[1, 1] = (byte)(StateArray[1, 1] ^ KeyScheduleBytes[1, (Round * 4) + 1]);
-    StateArray[2, 1] = (byte)(StateArray[2, 1] ^ KeyScheduleBytes[2, (Round * 4) + 1]);
-    StateArray[3, 1] = (byte)(StateArray[3, 1] ^ KeyScheduleBytes[3, (Round * 4) + 1]);
-
-    StateArray[0, 2] = (byte)(StateArray[0, 2] ^ KeyScheduleBytes[0, (Round * 4) + 2]);
-    StateArray[1, 2] = (byte)(StateArray[1, 2] ^ KeyScheduleBytes[1, (Round * 4) + 2]);
-    StateArray[2, 2] = (byte)(StateArray[2, 2] ^ KeyScheduleBytes[2, (Round * 4) + 2]);
-    StateArray[3, 2] = (byte)(StateArray[3, 2] ^ KeyScheduleBytes[3, (Round * 4) + 2]);
-
-    StateArray[0, 3] = (byte)(StateArray[0, 3] ^ KeyScheduleBytes[0, (Round * 4) + 3]);
-    StateArray[1, 3] = (byte)(StateArray[1, 3] ^ KeyScheduleBytes[1, (Round * 4) + 3]);
-    StateArray[2, 3] = (byte)(StateArray[2, 3] ^ KeyScheduleBytes[2, (Round * 4) + 3]);
-    StateArray[3, 3] = (byte)(StateArray[3, 3] ^ KeyScheduleBytes[3, (Round * 4) + 3]);
-    }
-
-
-
-  // This is meant to be used to compare with the test vectors
-  // in Appendix C.3.
-  internal string GetStateString()
-    {
-    StringBuilder SBuilder = new StringBuilder();
-
-    // Column-major order:
-    for( int Column = 0; Column < 4; Column++ )
-      {
-      for( int Row = 0; Row < 4; Row++ )
-        SBuilder.Append( StateArray[Row, Column].ToString( "X2" ));
-
-      }
-
-    return SBuilder.ToString();
-    }
-
-
-
-  ///////////
-  internal void EncryptTestBlock()
-    {
-    ShowStatus( " " );
-    ShowStatus( "Encrypt Test Block:" );
-    ShowStatus( " " );
-
-    EncryptBlock( TestBlock, OutBlock );
-
-    ShowStatus( " " );
-    ShowStatus( " " );
-    }
-    //////////
-
-
-
-  private void SubBytes()
-    {
-    // Even though you could do it like this:
-    // StateArray[0, 0] = SBox[StateArray[0, 0]];
-    // It can be a lot faster to call the SubByte() function instead
-    // because it allows the compiler to optimize it.
-    // For example the compiler can figure out the range-checking
-    // in an easier way when it is inside the SubByte() function
-    // by itself.
-
-    StateArray[0, 0] = SubByte( StateArray[0, 0] );
-    StateArray[1, 0] = SubByte( StateArray[1, 0] );
-    StateArray[2, 0] = SubByte( StateArray[2, 0] );
-    StateArray[3, 0] = SubByte( StateArray[3, 0] );
-    StateArray[0, 1] = SubByte( StateArray[0, 1] );
-    StateArray[1, 1] = SubByte( StateArray[1, 1] );
-    StateArray[2, 1] = SubByte( StateArray[2, 1] );
-    StateArray[3, 1] = SubByte( StateArray[3, 1] );
-    StateArray[0, 2] = SubByte( StateArray[0, 2] );
-    StateArray[1, 2] = SubByte( StateArray[1, 2] );
-    StateArray[2, 2] = SubByte( StateArray[2, 2] );
-    StateArray[3, 2] = SubByte( StateArray[3, 2] );
-    StateArray[0, 3] = SubByte( StateArray[0, 3] );
-    StateArray[1, 3] = SubByte( StateArray[1, 3] );
-    StateArray[2, 3] = SubByte( StateArray[2, 3] );
-    StateArray[3, 3] = SubByte( StateArray[3, 3] );
-    }
-
-
-
   private void ShiftRows()
     {
     // The first row is unchanged.
@@ -257,7 +264,6 @@ for( Int32 count = 0; count <
 
 
 
-  // From: http://en.wikipedia.org/wiki/Rijndael_mix_columns
   private byte GaloisMultiply( byte A, byte B )
     {
     byte Product = 0;
@@ -283,7 +289,13 @@ for( Int32 count = 0; count <
 
   private void MixColumns()
     {
-    TempStateArray[0, 0] = (byte)(GaloisMultiply( 0x02, StateArray[0, Const0]) ^ GaloisMultiply( 0x03, StateArray[1, Const0]) ^ StateArray[2, Const0] ^ StateArray[3, Const0]);
+    TempStateArray[0, 0] = (byte)(GaloisMultiply(
+            0x02, StateArray[0, Const0]) ^
+            GaloisMultiply( 0x03, StateArray[1,
+        Const0]) ^ StateArray[2, Const0] ^
+        StateArray[3, Const0]);
+
+
     TempStateArray[1, 0] = (byte)(StateArray[0, Const0] ^ GaloisMultiply( 0x02, StateArray[1, Const0]) ^ GaloisMultiply( 0x03, StateArray[2, Const0]) ^ StateArray[3, Const0]);
     TempStateArray[2, 0] = (byte)(StateArray[0, Const0] ^ StateArray[1, Const0] ^ GaloisMultiply( 0x02, StateArray[2, Const0]) ^ GaloisMultiply( 0x03, StateArray[3, Const0]));
     TempStateArray[3, 0] = (byte)(GaloisMultiply( 0x03, StateArray[0, Const0]) ^ StateArray[1, Const0] ^ StateArray[2, Const0] ^ GaloisMultiply( 0x02, StateArray[3, Const0]));
@@ -504,49 +516,13 @@ for( Int32 count = 0; count <
 
     SetUpInitVector();
 
-    // I added this part that makes a randomish throw-away block
-    // for the first block.
-    ulong Ticks = (ulong)DateTime.Now.Ticks;
-    PlainBlock[0] = (byte)(Ticks & 0xFF);
-    PlainBlock[1] = (byte)((Ticks >> 8) & 0xFF);
-    PlainBlock[2] = (byte)((Ticks >> 16) & 0xFF);
-    PlainBlock[3] = (byte)((Ticks >> 24) & 0xFF);
-    PlainBlock[4] = (byte)((Ticks >> 32) & 0xFF);
-    PlainBlock[5] = (byte)((Ticks >> 40) & 0xFF);
-    PlainBlock[6] = (byte)((Ticks >> 48) & 0xFF);
-    PlainBlock[7] = (byte)(Sequence & 0xFF);
-    PlainBlock[8] = (byte)((Sequence >> 8) & 0xFF);
-    PlainBlock[9] = (byte)((Sequence >> 16) & 0xFF);
-    PlainBlock[10] = (byte)((Sequence >> 24) & 0xFF);
-    PlainBlock[11] = PlainBlock[0];
-    PlainBlock[12] = PlainBlock[1];
-    PlainBlock[13] = PlainBlock[2];
-    PlainBlock[14] = PlainBlock[3];
-    PlainBlock[15] = PlainBlock[4];
-
-    Sequence++;
-
-    for( int Count = 0; Count < 16; Count++ )
-      OutBuffer[Count] = (byte)(PlainBlock[Count] ^ PreviousBlock[Count]);
-
-    EncryptBlock( PlainBlock, PreviousBlock );
-
-
-    // This part of this function (the for-loop below) was
-    // originally from the Diamond algorithm by Michael Paul
-    // Johnson.  It came from his Master of Science thesis in
-    // Electrical Engineering, in 1989.  He says it is "hereby
-    // dedicated to the Public Domain by the author and
-    // inventor, Michael Paul Johnson."
-
-    // But I've modified to work with the randomish block that
-    // starts this.
 
     int BytePos = 0;
     for( int Count = 0; Count < HowMany; Count++ )
       {
       PlainBlock[BytePos] = InBuffer[Count];
-      OutBuffer[Count + 16] = (byte)(InBuffer[Count] ^ PreviousBlock[BytePos]);
+      OutBuffer[Count + 16] = (byte)(InBuffer[Count] ^
+                     PreviousBlock[BytePos]);
       BytePos++;
       if( BytePos > 15 )
         {
@@ -557,33 +533,6 @@ for( Int32 count = 0; count <
 
     return true;
     }
-
-
-
-
-  internal string GetHash( byte[] InBuffer, int HowMany  )
-    {
-    if( HowMany > InBuffer.Length )
-      return "";
-
-    SetUpInitVectorForHash(); // Sets the first PreviousBlock.
-
-    int BytePos = 0;
-    for( int Count = 0; Count < HowMany; Count++ )
-      {
-      PlainBlock[BytePos] = InBuffer[Count];
-      // OutBuffer[Count + 16] = (byte)(InBuffer[Count] ^ PreviousBlock[BytePos]);
-      BytePos++;
-      if( BytePos > 15 )
-        {
-        EncryptBlock( PlainBlock, PreviousBlock );
-        BytePos = 0;
-        }
-      }
-
-    return BytesToLetterString( PreviousBlock );
-    }
-
 
 
 
@@ -682,98 +631,6 @@ for( Int32 count = 0; count <
 
 
 
-
-  internal string BytesToLetterString( byte[] InBytes )
-    {
-    StringBuilder SBuilder = new StringBuilder();
-    for( int Count = 0; Count < InBytes.Length; Count++ )
-      {
-      uint ByteHigh = InBytes[Count];
-      uint ByteLow = ByteHigh & 0x0F;
-      ByteHigh >>= 4;
-      SBuilder.Append( (char)('A' + (char)ByteHigh) );
-      SBuilder.Append( (char)('A' + (char)ByteLow) );
-      // MForm.ShowStatus( SBuilder.ToString() );
-      }
-
-    return SBuilder.ToString();
-    }
-
-
-
-
-
-
-  private bool IsInLetterRange( uint Letter )
-    {
-    const uint MaxLetter = (uint)('A') + 15;
-    const uint MinLetter = (uint)'A';
-
-    if( Letter > MaxLetter )
-      {
-      // MForm.ShowStatus( "Letter > MaxLetter" );
-      return false;
-      }
-
-    if( Letter < MinLetter )
-      {
-      // MForm.ShowStatus( "Letter < MinLetter" );
-      return false;
-      }
-
-    return true;
-    }
-
-
-
-
-  internal byte[] LetterStringToBytes( string InString )
-    {
-    if( InString == null )
-      return null;
-
-    if( InString.Length < 2 )
-      return null;
-
-    byte[] OutBytes;
-
-    try
-    {
-    OutBytes = new byte[InString.Length >> 1];
-    }
-    catch( Exception )
-      {
-      return null;
-      }
-
-    int Where = 0;
-    for( int Count = 0; Count < OutBytes.Length; Count++ )
-      {
-      uint Letter = InString[Where];
-      if( !IsInLetterRange( Letter ))
-        return null;
-
-      uint ByteHigh = Letter - (uint)'A';
-      ByteHigh <<= 4;
-      Where++;
-      Letter = InString[Where];
-      if( !IsInLetterRange( Letter ))
-        return null;
-
-      uint ByteLow = Letter - (uint)'A';
-      Where++;
-
-      OutBytes[Count] = (byte)(ByteHigh | ByteLow);
-      }
-
-    return OutBytes;
-    }
-
-
-
-  }
-}
-
     // This key is from the FIPS document
     // Appendix A - Key Expansion Examples.
     ///////////
@@ -795,6 +652,43 @@ for( Int32 count = 0; count <
      // 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
      // 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
      // };
+
+
+
+// This is meant to be used to compare with
+// the test vectors
+// in Appendix C.3.
+internal string GetStateString()
+    {
+    StringBuilder SBuilder = new StringBuilder();
+
+    // Column-major order:
+    for( int Column = 0; Column < 4; Column++ )
+      {
+      for( int Row = 0; Row < 4; Row++ )
+        SBuilder.Append( StateArray[Row, Column].ToString( "X2" ));
+
+      }
+
+    return SBuilder.ToString();
+    }
+
+
+
+  ///////////
+  internal void EncryptTestBlock()
+    {
+    ShowStatus( " " );
+    ShowStatus( "Encrypt Test Block:" );
+    ShowStatus( " " );
+
+    EncryptBlock( TestBlock, OutBlock );
+
+    ShowStatus( " " );
+    ShowStatus( " " );
+    }
+    //////////
+
 
 
 */

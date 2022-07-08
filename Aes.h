@@ -1,6 +1,7 @@
 // Copyright Eric Chauvin 2022.
 
 
+// Do AES 128 for TLS.
 
 // This is licensed under the GNU General
 // Public License (GPL).  It is the
@@ -15,10 +16,9 @@
 
 #pragma once
 
+
 // It should have a different Initialization
 // Vector each time.
-// unlike GG.
-// Galois counter mode?
 
 
 #include "../CppBase/BasicTypes.h"
@@ -53,12 +53,10 @@ class Aes
   // AesBlock& tempBlock;
 
 
-  // static const Int32 KeyLengthInBytes = 32; // 256 / 8
   // static const Int32 Const0 = 0;
   // static const Int32 Const1 = 1;
   // static const Int32 Const2 = 2;
   // static const Int32 Const3 = 3;
-  Uint64 sequence = 0;
 
 
   // This is called RotWord() in the FIPS
@@ -178,15 +176,13 @@ class Aes
     }
 
   void moveKeyScheduleWordsToBytes( void );
+  void addRoundKey( Int32 round );
+  void subBytes( void );
 
 
   public:
   inline Aes( void )
     {
-    // Is this supposed to be a random number?
-    sequence = Casting::i64ToU64(
-               0x7FFFFFFFFFFFFFFFLL &
-               TimeApi::getSecondsNow() );
     }
 
   inline Aes( const Aes& in )
