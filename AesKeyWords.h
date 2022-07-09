@@ -13,28 +13,24 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "AesConst.h"
 #include "../CppBase/RangeC.h"
 
 
 class AesKeyWords
   {
   private:
-  // bool testForCopy = false;
-
   // The key schedule generates Nb(Nr + 1) words.
-  // That is 4 times 15 words.
-
-  Uint32 keyScheduleWords[AesConst::KeyWordsSize]
-                                    = { 1, 2, 3 };
+  // The maximum size is 4 * (14 + 1) = 60.
+  Uint32 keyScheduleWords[60] = { 1, 2, 3 };
 
 
 
   public:
   inline Uint32 getV( const Int32 where ) const
     {
-    RangeC::test2( where, 0, 
-                  AesConst::KeyWordsSize - 1,
+    // Comment these out after testing.
+    RangeC::test2( where, 0,
+                  60 - 1,
             "AesKeyWords.getV() range for where." );
 
     return keyScheduleWords[where];
@@ -43,8 +39,8 @@ class AesKeyWords
   inline void setV( const Int32 where,
                     const Uint32 val )
     {
-    RangeC::test2( where, 0, 
-                  AesConst::KeyWordsSize - 1,
+    RangeC::test2( where, 0,
+                  60 - 1,
             "AesKeyWords.setV() range for where." );
 
     keyScheduleWords[where] = val;

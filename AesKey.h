@@ -14,21 +14,20 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "AesConst.h"
 
 
 class AesKey
   {
   private:
-  Uint8 key[AesConst::KeyLengthInBytes256] =
-                               { 1, 2, 3 };
+  // Maximum key size is 32 bytes.
+  Uint8 key[32] = { 1, 2, 3 };
 
 
   public:
   inline Uint8 getV( const Int32 where ) const
     {
     RangeC::test2( where, 0,
-               AesConst::KeyLengthInBytes256 - 1,
+               32 - 1,
              "AesKey.getV() range for where." );
 
     return key[where];
@@ -38,7 +37,7 @@ class AesKey
                     const Uint8 val )
     {
     RangeC::test2( where, 0,
-                AesConst::KeyLengthInBytes256 - 1,
+                32 - 1,
                 "AesKey.setV() range for where." );
 
     key[where] = val;

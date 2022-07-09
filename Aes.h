@@ -22,10 +22,15 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "../CppBase/TimeApi.h"
 #include "../CppBase/Casting.h"
 
-#include "AesConst.h"
+
+// None of these Aes #include files make their
+// own separate compilation unit.  Only Aes.cpp
+// makes it's own compilation unit.
+// Use the compiler option to generate assembly
+// language output and see what Aes.cpp produces.
+
 #include "AesState.h"
 #include "AesSBox.h"
 #include "AesBlock.h"
@@ -34,9 +39,6 @@
 #include "AesKeyBytes.h"
 #include "AesKey.h"
 
-
-// Key sizes 128, 192, 256.
-// AES has a fixed block size of 128 bits.
 
 
 class Aes
@@ -50,13 +52,23 @@ class Aes
   AesKeyWords aesKeyWords;
   AesKeyBytes aesKeyBytes;
 
+  // AES has a fixed block size of 128 bits.
+  // Nb = Number of columns, 32 bit words, in
+  // the state.  It is always 4.
+  // Nk = Number of 32 bit words in the key.
+  // It is 4, 6 or 8.
+  // Nr = Number of rounds.
+
+
+  // 10 rounds for 128 bit key, 12 rounds for 192,
+  // 14 rounds for 256 bit key.
+  Int32 numberOfRounds = 14;
+  // Int32 keyLengthInBytes = 32; // 256 / 8
+  Int32 keyWordsSize = 4 * (numberOfRounds + 1);
+  // Int32 keyBytesSize = keyWordsSize * 4;
+
+
   // AesBlock& tempBlock;
-
-
-  // static const Int32 Const0 = 0;
-  // static const Int32 Const1 = 1;
-  // static const Int32 Const2 = 2;
-  // static const Int32 Const3 = 3;
 
 
   // This is called RotWord() in the FIPS
@@ -92,15 +104,42 @@ class Aes
     }
 
 
+  inline Uint8 galoisMultiply( Uint8 A, Uint8 B )
+    {
+    // Multiplication in the field GF2^8.
+    // The bits are the coefficients of a
+    // polynomial.
+    // Multiplication is mod an irreducible
+    // polynomial x^8 + x^4 + x^3 + x + 1.
+    // Except that it's mod 2^8 because they
+    // are Uint8 values.
+
+    Uint8 product = 0;
+    // A shift-and-add type of multiplication.
+    for( Int32 count = 0; count < 8; count++ )
+      {
+      if( (B & 1) != 0 )
+        product ^= A; // Addition.
+
+      // Get the high bit before shifting it off.
+      Uint8 highBit = A & 0x80;
+      A <<= 1;
+      if( highBit != 0 )
+        A ^= 0x1B; // x^8 + x^4 + x^3 + x + 1
+
+      B >>= 1;
+      }
+
+    return product;
+    }
+
+
   inline static Uint32 makeUintFromBytes(
                           const Uint8 byte0,
                           const Uint8 byte1,
                           const Uint8 byte2,
                           const Uint8 byte3 )
     {
-    // A Uint32  corresponds to one column in a
-    // column-major-order matrix.
-
     // Appendix A - Key Expansion Examples.
     // Also see section 3.5.
 
@@ -178,6 +217,8 @@ class Aes
   void moveKeyScheduleWordsToBytes( void );
   void addRoundKey( Int32 round );
   void subBytes( void );
+  void shiftRows( void );
+  void mixColumns( void );
 
 
   public:

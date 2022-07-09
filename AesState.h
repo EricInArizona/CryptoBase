@@ -49,6 +49,13 @@ class AesState
 
     }
 
+  inline void copy( AesState& in )
+    {
+    for( Int32 count = 0; count < 16; count++ )
+      aR[count] = in.aR[count];
+
+    }
+
 
   inline Uint8 getV( const Int32 row,
                      const Int32 column ) const

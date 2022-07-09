@@ -41,10 +41,24 @@
 
 void Aes::keyExpansion( void )
 {
-// For the 256 bit keys.
-// 8 = AesConst::KeyLengthInBytes256 / 4
+// Makes a total of Nb(Nr + 1) words.
 
-for( Int32 count = 0; count < 8; count++ )
+// Using these variable names to match up with
+// the specs in the FIPS document.
+
+// Nb = Number of columns, 32 bit words, in
+// the state.  It is always 4.
+// const Int32 Nb = 4;
+
+
+// Nk = Number of 32 bit words in the key.
+// It is 4, 6 or 8.
+const Int32 Nk = keyWordsSize;
+
+// Nr = Number of rounds.
+// const Int32 Nr = numberOfRounds;
+
+for( Int32 count = 0; count < Nk; count++ )
   {
   // The four bytes: 0x60, 0x3d, 0xeb, 0x10,
   // become the uint: w0 = 603deb10
@@ -57,39 +71,27 @@ for( Int32 count = 0; count < 8; count++ )
   aesKeyWords.setV( count, theWord );
   }
 
-// First four bytes of the key: 0x60, 0x3d,
-// 0xeb, 0x10.
-// w0 = 603deb10
-
-// 8 = AesConst::KeyLengthInBytes256 / 4
-
-for( Int32 count = 8;
-                count < AesConst::KeyWordsSize;
-                count++ )
+// max = 4 * (numberOfRounds + 1)
+const Int32 max = keyWordsSize;
+for( Int32 count = Nk; count < max; count++ )
   {
   Uint32 temp = aesKeyWords.getV( count - 1 );
 
-  // if( (count % 8) == 0)
-  if( (count & 0x07) == 0)
+  if( (count % Nk) == 0) // mod 4, 6 or 8.
     {
-    // See Appendix A.3 Expansion of a
-    // 256-bit Cipher Key.
-    temp = rotateWord( temp );
-    temp = subWord( temp );
-    Uint32 rConVal = aesRCon.getV( count / 8 );
-
-    rConVal <<= 24;
-    temp = temp ^ rConVal;
+    Uint32 rConVal = aesRCon.getV( count / Nk );
+    temp = subWord( rotateWord( temp )) ^ rConVal;
     }
 
-  // if( (Count % 8) == 4)
-  // else if( 8 > 6 and i mod Nk = 4)
-  if( (count & 0x07) == 4)
+  // The above if-statement can't be true if
+  // this is true.  else-if.
+  // if Nk is > 6 then this is a 256 bit key.
+  if( (Nk > 6) && ((count % Nk) == 4) )
     {
     temp = subWord( temp );
     }
 
-  Uint32 prevWord = aesKeyWords.getV( count - 8 );
+  Uint32 prevWord = aesKeyWords.getV( count - Nk );
   aesKeyWords.setV( count, prevWord ^ temp );
   }
 
@@ -100,8 +102,8 @@ moveKeyScheduleWordsToBytes();
 
 void Aes::moveKeyScheduleWordsToBytes( void )
 {
-for( Int32 count = 0; count <
-                 AesConst::KeyWordsSize; count++ )
+const Int32 max = keyWordsSize;
+for( Int32 count = 0; count < max; count++ )
   {
   Uint32 aWord = aesKeyWords.getV( count );
 
@@ -235,68 +237,83 @@ aesState.setV( 3, 3, subByte(
 
 
 
+void Aes::shiftRows( void )
+{
+// The first row is unchanged.
+// StateArray[Row, Column]
+
+Uint8 temp = aesState.getV( 1, 0 );
+
+aesState.setV( 1, 0, aesState.getV( 1, 1 ));
+aesState.setV( 1, 1, aesState.getV( 1, 2 ));
+aesState.setV( 1, 2, aesState.getV( 1, 3 ));
+aesState.setV( 1, 3, temp );
+
+temp = aesState.getV( 2, 0 );
+Uint8 temp2 = aesState.getV( 2, 1 );
+
+aesState.setV( 2, 0, aesState.getV( 2, 2 ));
+aesState.setV( 2, 1, aesState.getV( 2, 3 ));
+aesState.setV( 2, 2, temp );
+aesState.setV( 2, 3, temp2 );
+
+temp = aesState.getV( 3, 0 );
+temp2 = aesState.getV( 3, 1 );
+Uint8 temp3 = aesState.getV( 3, 2 );
+
+aesState.setV( 3, 0, aesState.getV( 3, 3 ));
+aesState.setV( 3, 1, temp );
+aesState.setV( 3, 2, temp2 );
+aesState.setV( 3, 3, temp3 );
+}
+
+
+
+
+void Aes::mixColumns( void )
+{
+AesState tempState;
+
+Uint8 val = galoisMultiply( 0x02, 
+                aesState.getV( 0, 0 )) ^
+            galoisMultiply( 0x03, 
+                aesState.getV( 1, 0 )) ^
+            aesState.getV( 2, 0 ) ^
+            aesState.getV( 3, 0 );
+
+tempState.setV( 0, 0, val );
+
+val = aesState.getV( 0, 0 ) ^
+      galoisMultiply( 0x02,
+                 aesState.getV( 1, 0 )) ^
+      galoisMultiply( 0x03,
+                 aesState.getV( 2, 0 )) ^
+      aesState.getV( 3, 0 );
+
+tempState.setV( 1, 0, val );
+
 /*
-  private void ShiftRows()
-    {
-    // The first row is unchanged.
-    // StateArray[Row, Column]
-    byte Temp = StateArray[1, 0];
-    StateArray[1, 0] = StateArray[1, 1];
-    StateArray[1, 1] = StateArray[1, 2];
-    StateArray[1, 2] = StateArray[1, 3];
-    StateArray[1, 3] = Temp;
+tempState.setV( 2, 0, val );
+tempState.setV( 3, 0, val );
 
-    Temp = StateArray[2, 0];
-    byte Temp2 = StateArray[2, 1];
-    StateArray[2, 0] = StateArray[2, 2];
-    StateArray[2, 1] = StateArray[2, 3];
-    StateArray[2, 2] = Temp;
-    StateArray[2, 3] = Temp2;
+tempState.setV( 0, 1, val );
+tempState.setV( 1, 1, val );
+tempState.setV( 2, 1, val );
+tempState.setV( 3, 1, val );
 
-    Temp = StateArray[3, 0];
-    Temp2 = StateArray[3, 1];
-    byte Temp3 = StateArray[3, 2];
-    StateArray[3, 0] = StateArray[3, 3];
-    StateArray[3, 1] = Temp;
-    StateArray[3, 2] = Temp2;
-    StateArray[3, 3] = Temp3;
-    }
+tempState.setV( 0, 2, val );
+tempState.setV( 1, 2, val );
+tempState.setV( 2, 2, val );
+tempState.setV( 3, 2, val );
 
-
-
-  private byte GaloisMultiply( byte A, byte B )
-    {
-    byte Product = 0;
-    for( int Count = 0; Count < 8; Count++ )
-      {
-      if( (B & 1) != 0 )
-        Product ^= A;
-
-      // Get the high bit before shifting it.
-      int HighBit = A & 0x80;
-      A <<= 1;
-      if( HighBit != 0 )
-        A ^= 0x1B; // x^8 + x^4 + x^3 + x + 1
-
-      B >>= 1;
-      }
-
-    return Product;
-    }
+tempState.setV( 0, 3, val );
+tempState.setV( 1, 3, val );
+tempState.setV( 2, 3, val );
+tempState.setV( 3, 3, val );
 
 
 
 
-  private void MixColumns()
-    {
-    TempStateArray[0, 0] = (byte)(GaloisMultiply(
-            0x02, StateArray[0, Const0]) ^
-            GaloisMultiply( 0x03, StateArray[1,
-        Const0]) ^ StateArray[2, Const0] ^
-        StateArray[3, Const0]);
-
-
-    TempStateArray[1, 0] = (byte)(StateArray[0, Const0] ^ GaloisMultiply( 0x02, StateArray[1, Const0]) ^ GaloisMultiply( 0x03, StateArray[2, Const0]) ^ StateArray[3, Const0]);
     TempStateArray[2, 0] = (byte)(StateArray[0, Const0] ^ StateArray[1, Const0] ^ GaloisMultiply( 0x02, StateArray[2, Const0]) ^ GaloisMultiply( 0x03, StateArray[3, Const0]));
     TempStateArray[3, 0] = (byte)(GaloisMultiply( 0x03, StateArray[0, Const0]) ^ StateArray[1, Const0] ^ StateArray[2, Const0] ^ GaloisMultiply( 0x02, StateArray[3, Const0]));
 
@@ -315,38 +332,14 @@ aesState.setV( 3, 3, subByte(
     TempStateArray[2, 3] = (byte)(StateArray[0, Const3] ^ StateArray[1, Const3] ^ GaloisMultiply( 0x02, StateArray[2, Const3]) ^ GaloisMultiply( 0x03, StateArray[3, Const3]));
     TempStateArray[3, 3] = (byte)(GaloisMultiply( 0x03, StateArray[0, Const3]) ^ StateArray[1, Const3] ^ StateArray[2, Const3] ^ GaloisMultiply( 0x02, StateArray[3, Const3]));
 
-    CopyTempStateToState();
-    }
+*/
+
+aesState.copy( tempState );
+}
 
 
 
-
-  private void CopyTempStateToState()
-    {
-    // The compiler can optimize this when it's done as
-    // a separate function.
-    StateArray[0, 0] = TempStateArray[0, 0];
-    StateArray[1, 0] = TempStateArray[1, 0];
-    StateArray[2, 0] = TempStateArray[2, 0];
-    StateArray[3, 0] = TempStateArray[3, 0];
-    StateArray[0, 1] = TempStateArray[0, 1];
-    StateArray[1, 1] = TempStateArray[1, 1];
-    StateArray[2, 1] = TempStateArray[2, 1];
-    StateArray[3, 1] = TempStateArray[3, 1];
-    StateArray[0, 2] = TempStateArray[0, 2];
-    StateArray[1, 2] = TempStateArray[1, 2];
-    StateArray[2, 2] = TempStateArray[2, 2];
-    StateArray[3, 2] = TempStateArray[3, 2];
-    StateArray[0, 3] = TempStateArray[0, 3];
-    StateArray[1, 3] = TempStateArray[1, 3];
-    StateArray[2, 3] = TempStateArray[2, 3];
-    StateArray[3, 3] = TempStateArray[3, 3];
-    }
-
-
-
-  // You'll see below in the CFBDecrypt() function why a
-  // DecryptBlock() function is never defined in this code.
+/*
 
   private void EncryptBlock( byte[] InBlock, byte[] OutBlock )
     {
@@ -372,8 +365,12 @@ aesState.setV( 3, 3, subByte(
     // ShowStatus( "After AddRoundKey:" );
     // ShowStatus( GetStateString() );
 
+    // This loop is what needs to be optimized.
     for( int Round = 1; Round < NumberOfRounds; Round++ )
       {
+      // What is it that can be optimized by
+      // using a lookup table of 32 bit words?
+
       // ShowStatus( " " );
       // ShowStatus( "Round: " + Round.ToString());
       //////
@@ -459,7 +456,6 @@ aesState.setV( 3, 3, subByte(
     if( TheKey == null )
       return;
 
-    // The big weakness in this implementation:
     int HowMany = TheKey.Length;
     if( HowMany > 32 )
       HowMany = 32;

@@ -14,28 +14,24 @@
 
 
 #include "../CppBase/BasicTypes.h"
-#include "AesConst.h"
+
 
 
 class AesKeyBytes
   {
   private:
-  // bool testForCopy = false;
-  Uint8 keyScheduleBytes[AesConst::KeyBytesSize] =
-                                  { 1, 2, 3 };
+  // Max KeyWordsSize times 4.
+  Uint8 keyScheduleBytes[60 * 4] = { 1, 2, 3 };
 
   public:
   inline Uint8 getV( const Int32 row,
                      const Int32 column ) const
     {
-    // This is colum Major order because
-    // consecutive elements in a column are
-    // next to each other.
     const Int32 where = (row * 4) + column;
 
-    // This range checking can be commented out.
+    // Comment this out after testing.
     RangeC::test2( where, 0,
-                   AesConst::KeyBytesSize,
+                   (60 * 4) - 1,
        "AesKeyBytes.getV() range for where." );
 
     return keyScheduleBytes[where];
@@ -47,7 +43,7 @@ class AesKeyBytes
     {
     const Int32 where = (row * 4) + column;
 
-    RangeC::test2( where, 0, AesConst::KeyBytesSize,
+    RangeC::test2( where, 0, (60 * 4) - 1,
        "AesKeyBytes.setV() range for where." );
 
     keyScheduleBytes[where] = val;
