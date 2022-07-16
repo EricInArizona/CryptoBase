@@ -274,22 +274,19 @@ void Aes::mixColumns( void )
 {
 AesState tempState;
 
-Uint8 val = galoisMultiply( 0x02,
-                aesState.getV( 0, 0 )) ^
-            galoisMultiply( 0x03,
-                aesState.getV( 1, 0 )) ^
-            aesState.getV( 2, 0 ) ^
-            aesState.getV( 3, 0 );
+Uint8 val = 
+  galoisMultiply( 0x02, aesState.getV( 0, 0 )) ^
+  galoisMultiply( 0x03, aesState.getV( 1, 0 )) ^
+  aesState.getV( 2, 0 ) ^
+  aesState.getV( 3, 0 );
 
 tempState.setV( 0, 0, val );
 
 
 val = aesState.getV( 0, 0 ) ^
-      galoisMultiply( 0x02,
-                 aesState.getV( 1, 0 )) ^
-      galoisMultiply( 0x03,
-                 aesState.getV( 2, 0 )) ^
-      aesState.getV( 3, 0 );
+  galoisMultiply( 0x02, aesState.getV( 1, 0 )) ^
+  galoisMultiply( 0x03, aesState.getV( 2, 0 )) ^
+  aesState.getV( 3, 0 );
 
 tempState.setV( 1, 0, val );
 
@@ -405,7 +402,7 @@ val = aesState.getV( 0, 3 ) ^
 tempState.setV( 2, 3, val );
 
 
-val = 
+val =
   galoisMultiply( 0x03, aesState.getV( 0, 3 )) ^
   aesState.getV( 1, 3 ) ^
   aesState.getV( 2, 3 ) ^
@@ -418,136 +415,65 @@ aesState.copy( tempState );
 
 
 
+void Aes::encryptBlock( AesBlock& inBlock,
+                        AesBlock& outBlock )
+{
+// Int32 test = 1;
+
+moveBlockToState( inBlock );
+
+// For the test vectors.
+//     if( GetStateString().ToLower() !=
+        //  "00112233445566778899aabbccddeeff" )
+
+addRoundKey( 0 );
+
+// This loop is what needs to be optimized.
+for( Int32 round = 1; round < numberOfRounds; 
+                                      round++ )
+  {
+  // if( !MatchesTestVector( Round, GetStateString()))
+
+  // test = 2;
+  subBytes();
+  shiftRows();
+  mixColumns();
+  addRoundKey( round );
+  }
+
+// Do the last part without the mixColumns():
+
+subBytes();
+shiftRows();
+addRoundKey( numberOfRounds );
+
+// if( GetStateString().ToLower() !=
+          // "8ea2b7ca516745bfeafc49904b496089" )
+
+moveStateToBlock( outBlock );
+}
+
+
+
+
+void Aes::setKey( CharBuf& theKey )
+{
+for( Int32 count = 0; count < 32; count++ )
+  aesKey.setV( count, 0 );
+
+Int32 howMany = theKey.getLast();
+if( howMany > 32 )
+  howMany = 32;
+
+for( Int32 count = 0; count < howMany; count++ )
+aesKey.setV( count, theKey.getU8( count ));
+
+keyExpansion();
+}
+
+
+
 /*
-
-  private void EncryptBlock( byte[] InBlock, byte[] OutBlock )
-    {
-    int Test = 1;
-    try
-    {
-    MoveInBlockToState( InBlock );
-
-    //////
-    // For the test vectors.
-    if( GetStateString().ToLower() != "00112233445566778899aabbccddeeff" )
-      {
-      MessageBox.Show( "Initial state doesn't match test vector.", "Rad Net Server", MessageBoxButtons.OK );
-      return;
-      }
-      ///////
-
-    // ShowStatus( "Initial State:" );
-    // ShowStatus( GetStateString() );
-    // ShowStatus( " " );
-
-    AddRoundKey( 0 );
-    // ShowStatus( "After AddRoundKey:" );
-    // ShowStatus( GetStateString() );
-
-    // This loop is what needs to be optimized.
-    for( int Round = 1; Round < NumberOfRounds; Round++ )
-      {
-      // What is it that can be optimized by
-      // using a lookup table of 32 bit words?
-
-      // ShowStatus( " " );
-      // ShowStatus( "Round: " + Round.ToString());
-      //////
-      if( !MatchesTestVector( Round, GetStateString()))
-        {
-        ShowStatus( "Didn't match the test vector." );
-        return;
-        }
-        ///////
-
-      Test = 2;
-      SubBytes();
-      // ShowStatus( "After SubBytes:" );
-      // ShowStatus( GetStateString() );
-
-      Test = 3;
-      ShiftRows();
-      // ShowStatus( "After ShiftRows:" );
-      // ShowStatus( GetStateString() );
-
-      Test = 4;
-      MixColumns();
-      // ShowStatus( "After MixColumns:" );
-      // ShowStatus( GetStateString() );
-
-      Test = 5;
-      AddRoundKey( Round );
-      // ShowStatus( "After AddRoundKey:" );
-      // ShowStatus( GetStateString() );
-      }
-
-    // ShowStatus( " " );
-    // ShowStatus( "Round: 14" );
-    //////////
-    if( !MatchesTestVector( 14, GetStateString()))
-      {
-      ShowStatus( "Didn't match the test vector." );
-      return;
-      }
-      /////////
-
-
-    // Do the last part without the MixColumns():
-    Test = 6;
-    SubBytes();
-    Test = 7;
-    ShiftRows();
-    Test = 8;
-    AddRoundKey( NumberOfRounds );
-    Test = 9;
-
-    // round[14].output 8ea2b7ca516745bfeafc49904b496089
-    //////
-    if( GetStateString().ToLower() != "8ea2b7ca516745bfeafc49904b496089" )
-      {
-      ShowStatus( "Didn't match the final output." );
-      return;
-      }
-      //////
-
-    MoveStateToOutBlock( OutBlock );
-
-    // ShowStatus( " " );
-    // ShowStatus( "It passed the tests." );
-    // ShowStatus( " " );
-    }
-    catch( Exception Except )
-      {
-      MessageBox.Show( "Error in EncryptBlock. Test is: " + Test.ToString() + "\r\n" + Except.Message, MainForm.MessageBoxTitle, MessageBoxButtons.OK, MessageBoxIcon.Stop );
-      // return false;
-      }
-    }
-
-
-
-
-
-  internal void SetKey( string TheKey )
-    {
-    for( int Count = 0; Count < 32; Count++ )
-      Key[Count] = 0;
-
-    if( TheKey == null )
-      return;
-
-    int HowMany = TheKey.Length;
-    if( HowMany > 32 )
-      HowMany = 32;
-
-    for( int Count = 0; Count < HowMany; Count++ )
-      Key[Count] = (byte)(TheKey[Count]);
-
-    KeyExpansion();
-    }
-
-
-
-
   // http://en.wikipedia.org/wiki/Initialization_vector
   private void SetUpInitVector()
     {

@@ -228,6 +228,8 @@ class Aes
   void subBytes( void );
   void shiftRows( void );
   void mixColumns( void );
+  void encryptBlock( AesBlock& inBlock,
+                     AesBlock& outBlock );
 
 
   public:
