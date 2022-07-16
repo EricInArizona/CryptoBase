@@ -84,7 +84,7 @@ for( Int32 count = Nk; count < max; count++ )
     }
 
   // The above if-statement can't be true if
-  // this is true.  else-if.
+  // this is true.  It is an else-if.
   // if Nk is > 6 then this is a 256 bit key.
   if( (Nk > 6) && ((count % Nk) == 4) )
     {
@@ -274,14 +274,15 @@ void Aes::mixColumns( void )
 {
 AesState tempState;
 
-Uint8 val = galoisMultiply( 0x02, 
+Uint8 val = galoisMultiply( 0x02,
                 aesState.getV( 0, 0 )) ^
-            galoisMultiply( 0x03, 
+            galoisMultiply( 0x03,
                 aesState.getV( 1, 0 )) ^
             aesState.getV( 2, 0 ) ^
             aesState.getV( 3, 0 );
 
 tempState.setV( 0, 0, val );
+
 
 val = aesState.getV( 0, 0 ) ^
       galoisMultiply( 0x02,
@@ -292,47 +293,125 @@ val = aesState.getV( 0, 0 ) ^
 
 tempState.setV( 1, 0, val );
 
-/*
+
+val = aesState.getV( 0, 0 ) ^
+      aesState.getV( 1, 0 ) ^
+ galoisMultiply( 0x02, aesState.getV( 2, 0 )) ^
+ galoisMultiply( 0x03, aesState.getV( 3, 0 ));
+
 tempState.setV( 2, 0, val );
+
+
+val =
+  galoisMultiply( 0x03, aesState.getV( 0, 0 )) ^
+  aesState.getV( 1, 0 ) ^
+  aesState.getV( 2, 0 ) ^
+  galoisMultiply( 0x02, aesState.getV( 3, 0 ));
+
 tempState.setV( 3, 0, val );
 
+
+val =
+  galoisMultiply( 0x02, aesState.getV( 0, 1 )) ^
+  galoisMultiply( 0x03, aesState.getV( 1, 1 )) ^
+  aesState.getV( 2, 1 ) ^
+  aesState.getV( 3, 1 );
+
 tempState.setV( 0, 1, val );
+
+
+val =
+  aesState.getV( 0, 1 ) ^
+  galoisMultiply( 0x02, aesState.getV( 1, 1 )) ^
+  galoisMultiply( 0x03, aesState.getV( 2, 1 )) ^
+  aesState.getV( 3, 1 );
+
 tempState.setV( 1, 1, val );
+
+
+val = aesState.getV( 0, 1 ) ^
+      aesState.getV( 0, 1 ) ^
+  galoisMultiply( 0x02, aesState.getV( 2, 1 )) ^
+  galoisMultiply( 0x03, aesState.getV( 3, 1 ));
+
 tempState.setV( 2, 1, val );
+
+
+val =
+  galoisMultiply( 0x03, aesState.getV( 0, 1 )) ^
+  aesState.getV( 1, 1 ) ^
+  aesState.getV( 2, 1 ) ^
+  galoisMultiply( 0x02, aesState.getV( 3, 1 ));
+
 tempState.setV( 3, 1, val );
 
+
+val =
+  galoisMultiply( 0x02, aesState.getV( 0, 2 )) ^
+  galoisMultiply( 0x03, aesState.getV( 1, 2 )) ^
+  aesState.getV( 2, 2 ) ^
+  aesState.getV( 3, 2 );
+
 tempState.setV( 0, 2, val );
+
+
+val = aesState.getV( 0, 2 ) ^
+  galoisMultiply( 0x02, aesState.getV( 1, 2 )) ^
+  galoisMultiply( 0x03, aesState.getV( 2, 2 )) ^
+  aesState.getV( 3, 2 );
+
 tempState.setV( 1, 2, val );
+
+
+val = aesState.getV( 0, 2 ) ^
+      aesState.getV( 1, 2 ) ^
+  galoisMultiply( 0x02, aesState.getV( 2, 2 )) ^
+  galoisMultiply( 0x03, aesState.getV( 3, 2 ));
+
 tempState.setV( 2, 2, val );
+
+
+val =
+  galoisMultiply( 0x03, aesState.getV( 0, 2 )) ^
+  aesState.getV( 1, 2 ) ^
+  aesState.getV( 2, 2 ) ^
+  galoisMultiply( 0x02, aesState.getV( 3, 2 ));
+
 tempState.setV( 3, 2, val );
 
+
+val =
+  galoisMultiply( 0x02, aesState.getV( 0, 3 )) ^
+  galoisMultiply( 0x03, aesState.getV( 1, 3 )) ^
+  aesState.getV( 2, 3 ) ^
+  aesState.getV( 3, 3 );
+
 tempState.setV( 0, 3, val );
+
+
+val = aesState.getV( 0, 3 ) ^
+  galoisMultiply( 0x02, aesState.getV( 1, 3 )) ^
+  galoisMultiply( 0x03, aesState.getV( 2, 3 )) ^
+  aesState.getV( 3, 3 );
+
 tempState.setV( 1, 3, val );
+
+
+val = aesState.getV( 0, 3 ) ^
+      aesState.getV( 1, 3 ) ^
+  galoisMultiply( 0x02, aesState.getV( 2, 3 )) ^
+  galoisMultiply( 0x03, aesState.getV( 3, 3 ));
+
 tempState.setV( 2, 3, val );
+
+
+val = 
+  galoisMultiply( 0x03, aesState.getV( 0, 3 )) ^
+  aesState.getV( 1, 3 ) ^
+  aesState.getV( 2, 3 ) ^
+  galoisMultiply( 0x02, aesState.getV( 3, 3 ));
+
 tempState.setV( 3, 3, val );
-
-
-
-
-    TempStateArray[2, 0] = (byte)(StateArray[0, Const0] ^ StateArray[1, Const0] ^ GaloisMultiply( 0x02, StateArray[2, Const0]) ^ GaloisMultiply( 0x03, StateArray[3, Const0]));
-    TempStateArray[3, 0] = (byte)(GaloisMultiply( 0x03, StateArray[0, Const0]) ^ StateArray[1, Const0] ^ StateArray[2, Const0] ^ GaloisMultiply( 0x02, StateArray[3, Const0]));
-
-    TempStateArray[0, 1] = (byte)(GaloisMultiply( 0x02, StateArray[0, Const1]) ^ GaloisMultiply( 0x03, StateArray[1, Const1]) ^ StateArray[2, Const1] ^ StateArray[3, Const1]);
-    TempStateArray[1, 1] = (byte)(StateArray[0, Const1] ^ GaloisMultiply( 0x02, StateArray[1, Const1]) ^ GaloisMultiply( 0x03, StateArray[2, Const1]) ^ StateArray[3, Const1]);
-    TempStateArray[2, 1] = (byte)(StateArray[0, Const1] ^ StateArray[1, Const1] ^ GaloisMultiply( 0x02, StateArray[2, Const1]) ^ GaloisMultiply( 0x03, StateArray[3, Const1]));
-    TempStateArray[3, 1] = (byte)(GaloisMultiply( 0x03, StateArray[0, Const1]) ^ StateArray[1, Const1] ^ StateArray[2, Const1] ^ GaloisMultiply( 0x02, StateArray[3, Const1]));
-
-    TempStateArray[0, 2] = (byte)(GaloisMultiply( 0x02, StateArray[0, Const2]) ^ GaloisMultiply( 0x03, StateArray[1, Const2]) ^ StateArray[2, Const2] ^ StateArray[3, Const2]);
-    TempStateArray[1, 2] = (byte)(StateArray[0, Const2] ^ GaloisMultiply( 0x02, StateArray[1, Const2]) ^ GaloisMultiply( 0x03, StateArray[2, Const2]) ^ StateArray[3, Const2]);
-    TempStateArray[2, 2] = (byte)(StateArray[0, Const2] ^ StateArray[1, Const2] ^ GaloisMultiply( 0x02, StateArray[2, Const2]) ^ GaloisMultiply( 0x03, StateArray[3, Const2]));
-    TempStateArray[3, 2] = (byte)(GaloisMultiply( 0x03, StateArray[0, Const2]) ^ StateArray[1, Const2] ^ StateArray[2, Const2] ^ GaloisMultiply( 0x02, StateArray[3, Const2]));
-
-    TempStateArray[0, 3] = (byte)(GaloisMultiply( 0x02, StateArray[0, Const3]) ^ GaloisMultiply( 0x03, StateArray[1, Const3]) ^ StateArray[2, Const3] ^ StateArray[3, Const3]);
-    TempStateArray[1, 3] = (byte)(StateArray[0, Const3] ^ GaloisMultiply( 0x02, StateArray[1, Const3]) ^ GaloisMultiply( 0x03, StateArray[2, Const3]) ^ StateArray[3, Const3]);
-    TempStateArray[2, 3] = (byte)(StateArray[0, Const3] ^ StateArray[1, Const3] ^ GaloisMultiply( 0x02, StateArray[2, Const3]) ^ GaloisMultiply( 0x03, StateArray[3, Const3]));
-    TempStateArray[3, 3] = (byte)(GaloisMultiply( 0x03, StateArray[0, Const3]) ^ StateArray[1, Const3] ^ StateArray[2, Const3] ^ GaloisMultiply( 0x02, StateArray[3, Const3]));
-
-*/
 
 aesState.copy( tempState );
 }

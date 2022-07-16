@@ -1,7 +1,8 @@
 // Copyright Eric Chauvin 2022.
 
 
-// Do AES 128 for TLS.
+// To Do: AES 128 for TLS.
+
 
 // This is licensed under the GNU General
 // Public License (GPL).  It is the
@@ -104,6 +105,17 @@ class Aes
     }
 
 
+  // This galoisMultiply() could use optimization.
+  // It's a loop within a loop.
+  // It's also very interesting and worth
+  // exploring this more.
+
+  // Some expressions with constant values
+  // like this galoisMultiply( 0x02, x )
+  // can be optimized in a table.
+  // There are only a few of those constant
+  // values.
+
   inline Uint8 galoisMultiply( Uint8 A, Uint8 B )
     {
     // Multiplication in the field GF2^8.
@@ -111,11 +123,8 @@ class Aes
     // polynomial.
     // Multiplication is mod an irreducible
     // polynomial x^8 + x^4 + x^3 + x + 1.
-    // Except that it's mod 2^8 because they
-    // are Uint8 values.
 
     Uint8 product = 0;
-    // A shift-and-add type of multiplication.
     for( Int32 count = 0; count < 8; count++ )
       {
       if( (B & 1) != 0 )
