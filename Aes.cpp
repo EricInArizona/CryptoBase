@@ -30,10 +30,6 @@
       0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
       };
 
-    byte[] OutBlock = new byte[16];
-    byte[] PlainBlock = new byte[16];
-    byte[] PreviousBlock = new byte[16];
-
 */
 
 
@@ -274,7 +270,7 @@ void Aes::mixColumns( void )
 {
 AesState tempState;
 
-Uint8 val = 
+Uint8 val =
   galoisMultiply( 0x02, aesState.getV( 0, 0 )) ^
   galoisMultiply( 0x03, aesState.getV( 1, 0 )) ^
   aesState.getV( 2, 0 ) ^
@@ -415,12 +411,12 @@ aesState.copy( tempState );
 
 
 
-void Aes::encryptBlock( AesBlock& inBlock,
-                        AesBlock& outBlock )
-{
-// Int32 test = 1;
 
-moveBlockToState( inBlock );
+void Aes::encryptCharBuf( const CharBuf& inBuf,
+                          CharBuf& outBuf,
+                          const Int32 where )
+{
+moveCharBufToState( inBuf, where );
 
 // For the test vectors.
 //     if( GetStateString().ToLower() !=
@@ -429,7 +425,7 @@ moveBlockToState( inBlock );
 addRoundKey( 0 );
 
 // This loop is what needs to be optimized.
-for( Int32 round = 1; round < numberOfRounds; 
+for( Int32 round = 1; round < numberOfRounds;
                                       round++ )
   {
   // if( !MatchesTestVector( Round, GetStateString()))
@@ -450,22 +446,42 @@ addRoundKey( numberOfRounds );
 // if( GetStateString().ToLower() !=
           // "8ea2b7ca516745bfeafc49904b496089" )
 
-moveStateToBlock( outBlock );
+moveStateToCharBuf( outBuf );
 }
 
 
 
 
-void Aes::setKey( CharBuf& theKey )
+
+void Aes::setKey( const CharBuf& theKey,
+                  const Int32 keySize )
 {
-for( Int32 count = 0; count < 32; count++ )
-  aesKey.setV( count, 0 );
+// 10 rounds for 128 bit key,
+// 12 rounds for 192,
+// 14 rounds for 256 bit key.
 
-Int32 howMany = theKey.getLast();
-if( howMany > 32 )
-  howMany = 32;
+// Not using 192 bit key size.
+if( !((keySize == 16) || (keySize == 32)) )
+  throw "Aes key size has to be 16 or 32.";
 
-for( Int32 count = 0; count < howMany; count++ )
+if( keySize == 16 )
+  {
+  keyLengthInBytes = 16; // 128 / 8
+  numberOfRounds = 10;
+  }
+
+if( keySize == 32 )
+  {
+  keyLengthInBytes = 32; // 256 / 8
+  numberOfRounds = 14;
+  }
+
+keyWordsSize = 4 * (numberOfRounds + 1);
+
+if( keySize != theKey.getLast())
+  throw "Aes keySize doesn't match.";
+
+for( Int32 count = 0; count < keySize; count++ )
 aesKey.setV( count, theKey.getU8( count ));
 
 keyExpansion();
@@ -474,164 +490,6 @@ keyExpansion();
 
 
 /*
-  // http://en.wikipedia.org/wiki/Initialization_vector
-  private void SetUpInitVector()
-    {
-    byte[] InitVector = new byte[16];
-
-    for( int Count = 0; Count < 16; Count++ )
-      InitVector[Count] = (byte)Count;
-
-    // Give it a starting PreviousBlock.
-    // If you don't know the key, how can you figure
-    // out what's in the PreviousBlock?
-    EncryptBlock( InitVector, PreviousBlock );
-    }
-
-
-
-
-  private void SetUpInitVectorForHash()
-    {
-    byte[] InitVector = new byte[16];
-
-    for( int Count = 0; Count < 16; Count++ )
-      InitVector[Count] = (byte)Count;
-
-    // Give it a starting PreviousBlock.
-    // If you don't know the key, how can you figure
-    // out what's in the PreviousBlock?
-    EncryptBlock( InitVector, PreviousBlock );
-    }
-
-
-
-
-  internal bool CFBEncrypt( byte[] InBuffer, byte[] OutBuffer, int HowMany  )
-    {
-    if( HowMany > InBuffer.Length )
-      return false;
-
-    if( (HowMany + 16) > OutBuffer.Length )
-      return false;
-
-    SetUpInitVector();
-
-
-    int BytePos = 0;
-    for( int Count = 0; Count < HowMany; Count++ )
-      {
-      PlainBlock[BytePos] = InBuffer[Count];
-      OutBuffer[Count + 16] = (byte)(InBuffer[Count] ^
-                     PreviousBlock[BytePos]);
-      BytePos++;
-      if( BytePos > 15 )
-        {
-        EncryptBlock( PlainBlock, PreviousBlock );
-        BytePos = 0;
-        }
-      }
-
-    return true;
-    }
-
-
-
-  internal bool CFBDecrypt( byte[] InBuffer, byte[] OutBuffer, int HowMany )
-    {
-    int Test = 1;
-    try
-    {
-    if( HowMany > InBuffer.Length )
-      return false;
-
-    if( (HowMany - 16) > OutBuffer.Length )
-      return false;
-
-    SetUpInitVector();
-    Test = 2;
-
-    for( int Count = 0; Count < 16; Count++ )
-      {
-      byte ThrowAway = (byte)(InBuffer[Count] ^ PreviousBlock[Count]);
-      PlainBlock[Count] = ThrowAway;
-      }
-
-    Test = 3;
-    EncryptBlock( PlainBlock, PreviousBlock );
-
-    Test = 4;
-
-    int BytePos = 0;
-    for( int Count = 0; Count < (HowMany - 16); Count++ )
-      {
-      OutBuffer[Count] = (byte)(InBuffer[Count + 16] ^ PreviousBlock[BytePos]);
-      PlainBlock[BytePos] = OutBuffer[Count];
-      BytePos++;
-      if( BytePos > 15 )
-        {
-        // The code does EncryptBlock and not
-        // DecryptBlock here.  Doing the exclusive or on it
-        // again puts it back like it was.
-        EncryptBlock( PlainBlock, PreviousBlock );
-        BytePos = 0;
-        }
-      }
-
-    return true;
-
-    }
-    catch( Exception Except )
-      {
-      MessageBox.Show( "Error in CFBDecrypt. Test is: " + Test.ToString() + "\r\n" + Except.Message, MainForm.MessageBoxTitle, MessageBoxButtons.OK, MessageBoxIcon.Stop );
-      return false;
-      }
-    }
-
-
-
-
-  internal string EncryptString( string InString )
-    {
-    byte[] StrBytes = UTF8Strings.StringToBytes( InString );
-    if( StrBytes == null )
-      return "";
-
-    byte[] OutBytes = new byte[StrBytes.Length + 16];
-
-    CFBEncrypt( StrBytes, OutBytes, StrBytes.Length  );
-    return BytesToLetterString( OutBytes );
-    }
-
-
-
-
-  internal string DecryptString( string InString )
-    {
-    int Test = 1;
-    try
-    {
-    byte[] StrBytes = LetterStringToBytes( InString );
-    if( StrBytes == null )
-      return "";
-
-    byte[] OutBytes = new byte[StrBytes.Length - 16];
-
-    Test = 2;
-    CFBDecrypt( StrBytes, OutBytes, StrBytes.Length );
-
-    Test = 3;
-    return UTF8Strings.BytesToString( OutBytes, OutBytes.Length );
-    }
-    catch( Exception Except )
-      {
-      MessageBox.Show( "Error in AESEncryption DecryptString. Test is: " + Test.ToString() + "\r\n" + Except.Message, MainForm.MessageBoxTitle, MessageBoxButtons.OK, MessageBoxIcon.Stop );
-      return "";
-      }
-    }
-
-
-
     // This key is from the FIPS document
     // Appendix A - Key Expansion Examples.
     ///////////
@@ -654,8 +512,11 @@ keyExpansion();
      // 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
      // };
 
+*/
 
 
+
+/*
 // This is meant to be used to compare with
 // the test vectors
 // in Appendix C.3.
@@ -673,23 +534,43 @@ internal string GetStateString()
 
     return SBuilder.ToString();
     }
-
-
-
-  ///////////
-  internal void EncryptTestBlock()
-    {
-    ShowStatus( " " );
-    ShowStatus( "Encrypt Test Block:" );
-    ShowStatus( " " );
-
-    EncryptBlock( TestBlock, OutBlock );
-
-    ShowStatus( " " );
-    ShowStatus( " " );
-    }
-    //////////
-
-
-
 */
+
+
+
+void Aes::encryptTest( void )
+{
+/*
+// InBlock plain text for the test vector
+// example in Appendix C.3.
+// PLAINTEXT: 00112233445566778899aabbccddeeff
+    byte[] TestBlock = new byte[16]
+      {
+      0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+      0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
+      };
+*/
+
+CharBuf plainText;
+plainText.appendU8( 0x00, 1024 );
+plainText.appendU8( 0x11, 1024 );
+plainText.appendU8( 0x22, 1024 );
+plainText.appendU8( 0x33, 1024 );
+plainText.appendU8( 0x44, 1024 );
+plainText.appendU8( 0x55, 1024 );
+plainText.appendU8( 0x66, 1024 );
+plainText.appendU8( 0x77, 1024 );
+plainText.appendU8( 0x88, 1024 );
+plainText.appendU8( 0x99, 1024 );
+plainText.appendU8( 0xaa, 1024 );
+plainText.appendU8( 0xbb, 1024 );
+plainText.appendU8( 0xcc, 1024 );
+plainText.appendU8( 0xdd, 1024 );
+plainText.appendU8( 0xee, 1024 );
+plainText.appendU8( 0xff, 1024 );
+
+StIO::putS( "PlainText set." );
+
+
+//     EncryptBlock( TestBlock, OutBlock );
+}

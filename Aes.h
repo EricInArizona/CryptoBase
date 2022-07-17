@@ -1,8 +1,6 @@
 // Copyright Eric Chauvin 2022.
 
 
-// To Do: AES 128 for TLS.
-
 
 // This is licensed under the GNU General
 // Public License (GPL).  It is the
@@ -18,12 +16,16 @@
 #pragma once
 
 
-// It should have a different Initialization
-// Vector each time.
+
+// There are Intel and AMD AES-NI instruction
+// set extensions.
+// Those would be _much_ faster than this.
 
 
 #include "../CppBase/BasicTypes.h"
 #include "../CppBase/Casting.h"
+#include "../CppBase/CharBuf.h"
+#include "../CppBase/StIO.h"
 
 
 // None of these Aes #include files make their
@@ -34,7 +36,6 @@
 
 #include "AesState.h"
 #include "AesSBox.h"
-#include "AesBlock.h"
 #include "AesRCon.h"
 #include "AesKeyWords.h"
 #include "AesKeyBytes.h"
@@ -64,12 +65,9 @@ class Aes
   // 10 rounds for 128 bit key, 12 rounds for 192,
   // 14 rounds for 256 bit key.
   Int32 numberOfRounds = 14;
-  // Int32 keyLengthInBytes = 32; // 256 / 8
+  Int32 keyLengthInBytes = 32; // 256 / 8
   Int32 keyWordsSize = 4 * (numberOfRounds + 1);
-  // Int32 keyBytesSize = keyWordsSize * 4;
 
-
-  // AesBlock& tempBlock;
 
 
   // This is called RotWord() in the FIPS
@@ -165,11 +163,13 @@ class Aes
 
   void keyExpansion( void );
 
-  inline void moveBlockToState(
-                           const AesBlock& block )
+  inline void moveCharBufToState(
+                           const CharBuf& buf,
+                           const Int32 where )
     {
-    // Column-major order is Fortran-style for
-    // people in academia.  Apparently.
+    const Int32 last = buf.getLast();
+    if( (where + 15) >= last )
+      throw "Aes moveCharBufToState range.";
 
     // Section 3.5:
     // Big endian.
@@ -184,43 +184,43 @@ class Aes
     // And so on for W1, W2 and W3.
 
     // StateArray[Row, Column]
-    aesState.setV( 0, 0, block.getV( 0 ));
-    aesState.setV( 1, 0, block.getV( 1 ));
-    aesState.setV( 2, 0, block.getV( 2 ));
-    aesState.setV( 3, 0, block.getV( 3 ));
-    aesState.setV( 0, 1, block.getV( 4 ));
-    aesState.setV( 1, 1, block.getV( 5 ));
-    aesState.setV( 2, 1, block.getV( 6 ));
-    aesState.setV( 3, 1, block.getV( 7 ));
-    aesState.setV( 0, 2, block.getV( 8 ));
-    aesState.setV( 1, 2, block.getV( 9 ));
-    aesState.setV( 2, 2, block.getV( 10 ));
-    aesState.setV( 3, 2, block.getV( 11 ));
-    aesState.setV( 0, 3, block.getV( 12 ));
-    aesState.setV( 1, 3, block.getV( 13 ));
-    aesState.setV( 2, 3, block.getV( 14 ));
-    aesState.setV( 3, 3, block.getV( 15 ));
+    aesState.setV( 0, 0, buf.getU8( where ));
+    aesState.setV( 1, 0, buf.getU8( where + 1 ));
+    aesState.setV( 2, 0, buf.getU8( where + 2 ));
+    aesState.setV( 3, 0, buf.getU8( where + 3 ));
+    aesState.setV( 0, 1, buf.getU8( where + 4 ));
+    aesState.setV( 1, 1, buf.getU8( where + 5 ));
+    aesState.setV( 2, 1, buf.getU8( where + 6 ));
+    aesState.setV( 3, 1, buf.getU8( where + 7 ));
+    aesState.setV( 0, 2, buf.getU8( where + 8 ));
+    aesState.setV( 1, 2, buf.getU8( where + 9 ));
+    aesState.setV( 2, 2, buf.getU8( where + 10 ));
+    aesState.setV( 3, 2, buf.getU8( where + 11 ));
+    aesState.setV( 0, 3, buf.getU8( where + 12 ));
+    aesState.setV( 1, 3, buf.getU8( where + 13 ));
+    aesState.setV( 2, 3, buf.getU8( where + 14 ));
+    aesState.setV( 3, 3, buf.getU8( where + 15 ));
     }
 
 
-  inline void moveStateToBlock( AesBlock& block )
+  inline void moveStateToCharBuf( CharBuf& buf )
     {
-    block.setV( 0, aesState.getV( 0, 0 ));
-    block.setV( 1, aesState.getV( 1, 0 ));
-    block.setV( 2, aesState.getV( 2, 0 ));
-    block.setV( 3, aesState.getV( 3, 0 ));
-    block.setV( 4, aesState.getV( 0, 1 ));
-    block.setV( 5, aesState.getV( 1, 1 ));
-    block.setV( 6, aesState.getV( 2, 1 ));
-    block.setV( 7, aesState.getV( 3, 1 ));
-    block.setV( 8, aesState.getV( 0, 2 ));
-    block.setV( 9, aesState.getV( 1, 2 ));
-    block.setV( 10, aesState.getV( 2, 2 ));
-    block.setV( 11, aesState.getV( 3, 2 ));
-    block.setV( 12, aesState.getV( 0, 3 ));
-    block.setV( 13, aesState.getV( 1, 3 ));
-    block.setV( 14, aesState.getV( 2, 3 ));
-    block.setV( 15, aesState.getV( 3, 3 ));
+    buf.appendU8( aesState.getV( 0, 0 ), 1024 );
+    buf.appendU8( aesState.getV( 1, 0 ), 1024 );
+    buf.appendU8( aesState.getV( 2, 0 ), 1024 );
+    buf.appendU8( aesState.getV( 3, 0 ), 1024 );
+    buf.appendU8( aesState.getV( 0, 1 ), 1024 );
+    buf.appendU8( aesState.getV( 1, 1 ), 1024 );
+    buf.appendU8( aesState.getV( 2, 1 ), 1024 );
+    buf.appendU8( aesState.getV( 3, 1 ), 1024 );
+    buf.appendU8( aesState.getV( 0, 2 ), 1024 );
+    buf.appendU8( aesState.getV( 1, 2 ), 1024 );
+    buf.appendU8( aesState.getV( 2, 2 ), 1024 );
+    buf.appendU8( aesState.getV( 3, 2 ), 1024 );
+    buf.appendU8( aesState.getV( 0, 3 ), 1024 );
+    buf.appendU8( aesState.getV( 1, 3 ), 1024 );
+    buf.appendU8( aesState.getV( 2, 3 ), 1024 );
+    buf.appendU8( aesState.getV( 3, 3 ), 1024 );
     }
 
   void moveKeyScheduleWordsToBytes( void );
@@ -228,8 +228,6 @@ class Aes
   void subBytes( void );
   void shiftRows( void );
   void mixColumns( void );
-  void encryptBlock( AesBlock& inBlock,
-                     AesBlock& outBlock );
 
 
   public:
@@ -249,6 +247,15 @@ class Aes
     {
 
     }
+
+  void setKey( const CharBuf& theKey,
+               const Int32 keySize );
+
+  void encryptCharBuf( const CharBuf& inBuf,
+                       CharBuf& outBuf,
+                       const Int32 where );
+
+  void encryptTest( void );
 
 
   };
