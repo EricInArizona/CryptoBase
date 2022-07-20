@@ -18,8 +18,10 @@
 
 
 // There are Intel and AMD AES-NI instruction
-// set extensions.
-// Those would be _much_ faster than this.
+// set extensions.  Those would be _much_ faster
+// than this.
+// And see the CLMUL instruction set for
+// things like Galois Counter Mode.
 
 
 #include "../CppBase/BasicTypes.h"
