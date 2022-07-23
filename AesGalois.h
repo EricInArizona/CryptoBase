@@ -18,6 +18,15 @@
 #include "../CppBase/StIO.h"
 
 
+// RFC 5288 - AES Galois Counter Mode (GCM)
+// Cipher Suites for TLS
+
+// RFC 5116 - An Interface and Algorithms for
+// Authenticated encryption with Associated- Data
+// TLS_AES_128_GCM_SHA256    {0x13,0x01}
+
+
+
 // Galois Counter Mode
 // A GF2^128 finite field.
 // 128 bits in the block.
